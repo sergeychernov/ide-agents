@@ -28,8 +28,8 @@ npm i -g ide-agents
 Or from source:
 
 ```bash
-git clone https://github.com/sergeychernov/agentdesk.git
-cd agentdesk
+git clone https://github.com/sergeychernov/ide-agents.git
+cd ide-agents
 npm install
 npm run build
 npm i -g .

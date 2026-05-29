@@ -8,10 +8,10 @@ const config: Config = {
   future: {
     v4: true,
   },
-  url: 'https://github.com/sergeychernov/agentdesk',
+  url: 'https://github.com/sergeychernov/ide-agents',
   baseUrl: '/',
   organizationName: 'sergeychernov',
-  projectName: 'agentdesk',
+  projectName: 'ide-agents',
   onBrokenLinks: 'throw',
   i18n: {
     defaultLocale: 'en',
@@ -45,7 +45,7 @@ const config: Config = {
           label: 'Docs',
         },
         {
-          href: 'https://github.com/sergeychernov/agentdesk',
+          href: 'https://github.com/sergeychernov/ide-agents',
           label: 'GitHub',
           position: 'right',
         },
