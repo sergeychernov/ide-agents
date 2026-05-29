@@ -4,6 +4,9 @@ Local admin for **IDE agents and skills** (Cursor and similar) from any git repo
 
 Install skills and subagents into your IDE via symlinks — no copy-paste, no manual path juggling.
 
+[![GitHub](https://img.shields.io/badge/GitHub-sergeychernov%2Fide--agents-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/sergeychernov/ide-agents)
+[![npm](https://img.shields.io/npm/v/ide-agents?style=for-the-badge&logo=npm&logoColor=white&label=npm)](https://www.npmjs.com/package/ide-agents)
+
 ## What it does
 
 - Clones git repositories into `~/.ide-agents/repos/`

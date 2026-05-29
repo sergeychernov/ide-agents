@@ -54,6 +54,11 @@ const config: Config = {
           label: 'GitHub',
           position: 'right',
         },
+        {
+          href: 'https://www.npmjs.com/package/ide-agents',
+          label: 'npm',
+          position: 'right',
+        },
       ],
     },
     footer: {
