@@ -4,7 +4,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 /** Origin only — no path (Docusaurus rejects sub-paths in `url`). */
 const siteUrl =
-  process.env.SITE_URL ??
+  process.env.SITE_URL ||
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
 const config: Config = {
