@@ -2,13 +2,18 @@ import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
+/** Origin only — no path (Docusaurus rejects sub-paths in `url`). */
+const siteUrl =
+  process.env.SITE_URL ??
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
 const config: Config = {
   title: 'ide-agents',
   tagline: 'Local admin for IDE agents and skills from git',
   future: {
     v4: true,
   },
-  url: 'https://github.com/sergeychernov/ide-agents',
+  url: siteUrl,
   baseUrl: '/',
   organizationName: 'sergeychernov',
   projectName: 'ide-agents',
