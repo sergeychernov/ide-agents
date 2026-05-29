@@ -1,0 +1,51 @@
+---
+description: ide-agents architecture — monorepo layout, data flow, adapters
+alwaysApply: true
+---
+
+# ide-agents architecture
+
+Local CLI + HTTP server + React UI for managing **IDE agents and skills** from git repos via **symlinks** (Cursor adapter in MVP).
+
+## Layout
+
+```
+ide-agents/          # npm package name; repo folder may differ
+├── src/             # Node backend + CLI (tsc → dist/)
+├── web/             # Vite + React + Mantine UI (→ web/dist/)
+├── docs/            # Docusaurus site (separate package)
+└── fixtures/        # sample git repo for manual testing
+```
+
+## Runtime flow
+
+1. `ide-agents` (cli.ts) reads `~/.ide-agents/config.json`, starts Fastify on `127.0.0.1:3921`.
+2. Production: Fastify serves `web/dist` + `/api/*`. Dev: Vite :5173 proxies `/api` → backend.
+3. Git clones live in `~/.ide-agents/repos/<slug>/`.
+4. UI toggles **Global** / **Project** (mutually exclusive) → immediate `PUT /installations` + `POST /apply`.
+5. `apply.ts` creates/removes symlinks via `adapters/cursor.ts`. Never overwrite non-symlink targets.
+
+## Key modules
+
+| Module | Role |
+|--------|------|
+| `config.ts` | read/write config, migrate `~/.agentdesk/` → `~/.ide-agents/` |
+| `git.ts` | clone, fetch, pull, status |
+| `scan.ts` | list `skills/*/SKILL.md`, `agents/*.md`, parse frontmatter |
+| `targets.ts` | check if symlink target path is blocked |
+| `apply.ts` | symlink create/remove |
+| `adapters/cursor.ts` | map installation → `~/.cursor/` or `<project>/.cursor/` |
+| `server.ts` | REST API |
+
+## Config schema (v1)
+
+`installations[]`: `{ repoId, kind, artifactId, global, project, projectPath }`. One record per artifact per repo.
+
+Skill frontmatter `scope: global | project | any` controls which toggles are enabled in UI.
+
+## Conventions
+
+- ESM, Node 20+, TypeScript strict in `src/`.
+- API errors: `{ error: string }`.
+- macOS/Linux only (v0.1). Single adapter: `cursor`; more IDE adapters later.
+- Do not add corp/private skills to this repo — only generic tooling.

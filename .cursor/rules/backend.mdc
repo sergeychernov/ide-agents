@@ -1,0 +1,30 @@
+---
+description: Backend (src/) conventions for ide-agents
+globs: src/**/*.ts
+alwaysApply: false
+---
+
+# Backend conventions
+
+## Imports
+
+Use `.js` extensions in relative imports (NodeNext ESM).
+
+## API routes (`server.ts`)
+
+Base path: `/api`. Keep handlers thin — delegate to `config`, `git`, `scan`, `apply`.
+
+## Apply safety
+
+- Target exists and is **not** a symlink → skip with error, never delete/overwrite.
+- `scope: off` legacy → migrated to `global: false, project: false`; preserve `projectPath` for removal.
+- Idempotent re-apply: existing symlink to same source → `skipped`.
+
+## Git
+
+Use `execFile` for git commands. Support `file://` URLs. Do not store credentials in config.
+
+## Scanning
+
+Skills: directory with `SKILL.md`, frontmatter `name`, `description`, `scope`.
+Agents: `agents/*.md`, optional frontmatter `scope`.

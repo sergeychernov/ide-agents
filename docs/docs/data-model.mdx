@@ -1,0 +1,78 @@
+---
+sidebar_position: 3
+title: Data model
+---
+
+# Data model
+
+## config.json (schema v1)
+
+Stored at `~/.ide-agents/config.json`:
+
+```json
+{
+  "version": 1,
+  "adapter": "cursor",
+  "server": { "port": 3921 },
+  "repos": [
+    {
+      "id": "main",
+      "url": "https://github.com/org/skills.git",
+      "ref": "main",
+      "slug": "github-com-org-skills"
+    }
+  ],
+  "installations": [
+    {
+      "id": "uuid",
+      "repoId": "main",
+      "kind": "skill",
+      "artifactId": "tech-debt",
+      "sourcePath": "skills/tech-debt",
+      "targetName": "tech-debt",
+      "global": false,
+      "project": true,
+      "projectPath": "/Users/me/code/my-app"
+    }
+  ],
+  "recentProjects": ["/Users/me/code/my-app"]
+}
+```
+
+### Installation fields
+
+| Field | Description |
+|-------|-------------|
+| `kind` | `"skill"` or `"agent"` |
+| `global` | Symlink in `~/.cursor/...` |
+| `project` | Symlink in `<project>/.cursor/...` |
+| `projectPath` | Required when `project` is true; preserved when off for symlink removal |
+
+Global and project are **mutually exclusive** in the UI — at most one active per artifact.
+
+### Legacy migration
+
+Older configs used `scope: "global" | "project" | "off"`. These are migrated on read to `global` / `project` booleans.
+
+## Artifact (scanned, not persisted)
+
+Returned by `GET /api/repos/:id/artifacts`:
+
+```json
+{
+  "id": "hello",
+  "kind": "skill",
+  "sourcePath": "skills/hello",
+  "name": "hello",
+  "description": "From SKILL.md frontmatter",
+  "allowedScope": "any",
+  "targets": {
+    "global": { "exists": false, "isSymlink": false, "blocked": false },
+    "project": { "exists": true, "isSymlink": true, "blocked": false }
+  }
+}
+```
+
+`allowedScope` comes from SKILL.md frontmatter. If missing, both toggles are disabled in the UI.
+
+`targets.blocked` is true when a **non-symlink** file or directory already exists at the target path.

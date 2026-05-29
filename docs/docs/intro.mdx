@@ -1,0 +1,42 @@
+---
+sidebar_position: 1
+title: Introduction
+---
+
+# ide-agents
+
+**ide-agents** is a local admin for **IDE agents and skills** — Cursor subagents and skills today, more IDE adapters later — from any git repository.
+
+Install artifacts into your IDE via **symlinks**. No copy-paste, no manual path management.
+
+:::info
+Not affiliated with Cursor.
+:::
+
+## What it does
+
+- Clones git repositories into `~/.ide-agents/repos/`
+- Scans `skills/*/SKILL.md` and optional `agents/*.md`
+- Creates symlinks in `~/.cursor/` (global) or `<project>/.cursor/` (per-project)
+- Provides a browser UI at `http://127.0.0.1:3921`
+
+## Quick start
+
+```bash
+npm i -g ide-agents
+ide-agents
+```
+
+On first run, ide-agents creates `~/.ide-agents/` (migrates from `~/.agentdesk/` if you used an earlier build) and opens the UI.
+
+## Requirements
+
+- **macOS** or **Linux** (Windows not supported in v0.1)
+- **Node.js 20+**
+- **git** in PATH
+
+## Next steps
+
+- [Architecture](/docs/architecture) — how the system is structured
+- [Source repositories](/docs/source-repos) — expected repo layout and SKILL.md format
+- [Development](/docs/development) — build and contribute

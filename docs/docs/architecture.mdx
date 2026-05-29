@@ -1,0 +1,102 @@
+---
+sidebar_position: 2
+title: Architecture
+---
+
+# Architecture
+
+ide-agents is a single npm package with three layers: **CLI**, **HTTP API**, and **Web UI**.
+
+```mermaid
+flowchart LR
+  CLI[cli.ts] --> Server[server.ts Fastify]
+  Server --> API[/api/*]
+  Server --> Static[web/dist]
+  UI[React UI] --> API
+  API --> Config[config.ts]
+  API --> Git[git.ts]
+  API --> Scan[scan.ts]
+  API --> Apply[apply.ts]
+  Apply --> Adapter[adapters/cursor.ts]
+  Adapter --> FS[~/.cursor symlinks]
+  Git --> Repos[~/.ide-agents/repos]
+```
+
+## Repository layout
+
+```
+ide-agents/           # npm package (GitHub repo folder may differ)
+├── src/              # Backend + CLI (TypeScript → dist/)
+│   ├── cli.ts        # Entry: start server, open browser
+│   ├── server.ts     # Fastify routes + static files
+│   ├── config.ts     # ~/.ide-agents/config.json
+│   ├── git.ts        # clone, fetch, pull, status
+│   ├── scan.ts       # artifact discovery + frontmatter
+│   ├── apply.ts      # symlink management
+│   ├── targets.ts    # path blocking checks
+│   └── adapters/
+│       └── cursor.ts # IDE path mapping
+├── web/              # Vite + React + Mantine
+│   └── src/
+│       ├── pages/    # Settings, Skills, Agents
+│       └── components/
+├── docs/             # This Docusaurus site
+└── fixtures/         # Sample repo for testing
+```
+
+## Runtime modes
+
+### Production
+
+```bash
+npm run build   # tsc + vite build
+ide-agents      # node dist/cli.js
+```
+
+One process serves both the API and the built React app from `web/dist`.
+
+### Development
+
+```bash
+npm run dev
+```
+
+- Backend: `tsx watch src/cli.ts --no-open` on port **3921**
+- Frontend: Vite on port **5173** with `/api` proxy to backend
+
+## Adapter pattern
+
+MVP supports one adapter: **`cursor`**.
+
+The adapter maps an installation to filesystem paths:
+
+| Kind  | Global                         | Project                              |
+|-------|--------------------------------|--------------------------------------|
+| Skill | `~/.cursor/skills/<name>`      | `<project>/.cursor/skills/<name>`    |
+| Agent | `~/.cursor/agents/<name>.md`   | `<project>/.cursor/agents/<name>.md` |
+
+Future adapters for other AI IDEs would implement the same interface in `src/adapters/`.
+
+## Apply safety
+
+When creating symlinks, ide-agents:
+
+1. Creates parent directories if needed
+2. Skips if symlink already points to the correct source (idempotent)
+3. **Never** overwrites a regular file or directory — returns an error instead
+4. On deactivation, removes symlinks only (never touches non-symlink targets)
+
+## Data on disk
+
+```
+~/.ide-agents/
+├── config.json       # repos, installations, settings
+└── repos/
+    └── <slug>/       # git working copy
+        ├── skills/
+        └── agents/
+```
+
+Legacy data in `~/.agentdesk/` is renamed to `~/.ide-agents/` on first run.
+
+The CLI records `launchCwd` at startup and exposes it as `defaultProjectPath` in `/api/status` for the UI.

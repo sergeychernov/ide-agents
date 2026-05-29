@@ -1,0 +1,70 @@
+---
+sidebar_position: 6
+title: Development
+---
+
+# Development
+
+## Setup
+
+```bash
+git clone https://github.com/sergeychernov/agentdesk.git
+cd agentdesk
+npm install
+```
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Backend :3921 + Vite :5173 |
+| `npm run build` | Compile server + web |
+| `npm start` | Run production build |
+| `npm run docs:start` | Docusaurus dev server |
+| `npm run docs:build` | Build documentation site |
+
+## Project structure
+
+See [Architecture](/docs/architecture) for module overview.
+
+### Backend (`src/`)
+
+TypeScript, ESM (`NodeNext`), compiled to `dist/`. Entry: `dist/cli.js`, bin: `ide-agents`.
+
+### Web (`web/`)
+
+Vite + React + Mantine. Built to `web/dist/`, served by Fastify in production.
+
+### Docs (`docs/`)
+
+Separate npm package (Docusaurus 3). Not bundled into the CLI.
+
+## Manual testing
+
+Initialize the fixture repo:
+
+```bash
+cd fixtures/sample-repo
+git init && git add . && git commit -m "init"
+```
+
+In the UI, add repository URL:
+
+```
+file:///absolute/path/to/agentdesk/fixtures/sample-repo
+```
+
+## CLI flags
+
+```bash
+ide-agents --port 3922    # custom port
+ide-agents --no-open      # do not open browser
+```
+
+## Contributing guidelines
+
+- TypeScript strict-ish in `src/`
+- Minimal diffs; match existing patterns
+- API errors as `{ error: string }`
+- macOS/Linux only for v0.1
+- Do not commit secrets or corp-specific skills

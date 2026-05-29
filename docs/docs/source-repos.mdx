@@ -1,0 +1,70 @@
+---
+sidebar_position: 4
+title: Source repositories
+---
+
+# Source repositories
+
+ide-agents connects to **any git repository** with a predictable layout. Corporate or private skill catalogs live in separate repos — ide-agents only clones and links them.
+
+## Expected layout
+
+```
+my-skills-repo/
+├── skills/
+│   └── my-skill/
+│       └── SKILL.md
+└── agents/              # optional
+    └── my-agent.md
+```
+
+## SKILL.md frontmatter
+
+```yaml
+---
+name: my-skill
+description: What this skill does.
+scope: any
+---
+```
+
+### scope values
+
+| Value | UI behavior |
+|-------|-------------|
+| `global` | Only Global toggle enabled |
+| `project` | Only Project toggle enabled |
+| `any` | Both toggles available (mutually exclusive) |
+| *(missing)* | Both toggles disabled |
+
+## Agents
+
+Agent files are `agents/<name>.md`. Optional YAML frontmatter with `description` and `scope` (same values as skills).
+
+## Adding a repository
+
+1. Open **Settings** in the UI
+2. Enter git URL and branch (default `main`)
+3. Click **Add / Clone**
+
+### Local testing
+
+Use a `file://` URL:
+
+```
+file:///absolute/path/to/repo
+```
+
+The repo includes `fixtures/sample-repo/` for manual testing.
+
+### Private repositories
+
+Configure SSH or `gh` authentication yourself. ide-agents does **not** store tokens.
+
+## Installing artifacts
+
+1. Open **Skills** or **Agents**
+2. Select a repository
+3. Click **Global** (🌐) or **Project** (📁) on a card
+
+Symlinks are applied immediately. Click the active icon again to remove the symlink.

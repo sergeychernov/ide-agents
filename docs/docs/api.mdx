@@ -1,0 +1,72 @@
+---
+sidebar_position: 5
+title: REST API
+---
+
+# REST API
+
+Base URL: `http://127.0.0.1:<port>/api`
+
+Default port: **3921**
+
+## Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/status` | Server info, `defaultProjectPath` |
+| `GET` | `/repos` | List repos with git status |
+| `POST` | `/repos` | Clone repo `{ url, ref? }` |
+| `DELETE` | `/repos/:id` | Remove repo from config |
+| `POST` | `/repos/:id/fetch` | `git fetch` |
+| `POST` | `/repos/:id/pull` | `git pull` |
+| `GET` | `/repos/:id/artifacts` | Scan skills and agents |
+| `GET` | `/installations` | Current installations |
+| `PUT` | `/installations` | Replace installations array |
+| `POST` | `/apply` | Apply symlinks from config |
+
+### Query parameters
+
+`GET /repos/:id/artifacts?projectPath=/path` — include target path status for project scope.
+
+## Examples
+
+### Status
+
+```bash
+curl http://127.0.0.1:3921/api/status
+```
+
+```json
+{
+  "home": "/Users/me/.ide-agents",
+  "adapter": "cursor",
+  "port": 3921,
+  "version": "0.1.0",
+  "defaultProjectPath": "/Users/me/code/my-app"
+}
+```
+
+### Apply
+
+```bash
+curl -X POST http://127.0.0.1:3921/api/apply
+```
+
+```json
+{
+  "results": [
+    { "path": "/Users/me/.cursor/skills/hello", "action": "created" },
+    { "path": "/Users/me/code/app/.cursor/skills/hello", "action": "removed" }
+  ]
+}
+```
+
+Actions: `created`, `removed`, `skipped`. Skipped may include `error` when target is not a symlink.
+
+## Errors
+
+HTTP 4xx/5xx with body:
+
+```json
+{ "error": "Human-readable message" }
+```

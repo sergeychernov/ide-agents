@@ -1,0 +1,32 @@
+---
+description: Web UI (web/) conventions for ide-agents
+globs: web/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Web UI conventions
+
+## Stack
+
+Vite, React 19, React Router, Mantine 9, Tabler icons. No extra UI libraries.
+
+## Structure
+
+```
+web/src/
+├── pages/          # Settings, Skills, Agents, ArtifactListPage
+├── components/     # ArtifactCard, ArtifactCardGrid, artifactRow helpers
+└── api/client.ts   # fetch wrapper; JSON Content-Type only when body present
+```
+
+## UX rules
+
+- **Global** / **Project** icons are mutually exclusive; click applies immediately (no Save button).
+- Click active icon → deactivate and remove symlink.
+- `defaultProjectPath` from `/api/status` (CLI cwd) prefills project path input.
+- Cards: max 480px, grid `auto-fill` in `ArtifactCardGrid`.
+- Scope from frontmatter disables toggles; blocked paths (non-symlink exists) disable toggles.
+
+## Dev
+
+`npm run dev` — server :3921 + Vite :5173 with `/api` proxy.
