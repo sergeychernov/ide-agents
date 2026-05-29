@@ -97,7 +97,6 @@ function toSkillArtifact(
 async function scanSkillsInDirectory(
   parentDir: string,
   sourcePathPrefix: string,
-  options: { requireSkillMd: boolean },
 ): Promise<Artifact[]> {
   if (!(await pathExists(parentDir))) {
     return [];
@@ -112,7 +111,7 @@ async function scanSkillsInDirectory(
 
     const skillDir = path.join(parentDir, entry.name);
     const skillMdPath = path.join(skillDir, "SKILL.md");
-    if (options.requireSkillMd && !(await pathExists(skillMdPath))) {
+    if (!(await pathExists(skillMdPath))) {
       continue;
     }
 
@@ -127,20 +126,17 @@ async function scanSkillsInDirectory(
 }
 
 async function scanSkillsNested(repoPath: string): Promise<Artifact[]> {
-  return scanSkillsInDirectory(path.join(repoPath, "skills"), "skills", {
-    requireSkillMd: false,
-  });
+  return scanSkillsInDirectory(path.join(repoPath, "skills"), "skills");
 }
 
 /** Repos like bluriesophos/cursorskills: `<repo>/<skill-name>/SKILL.md` at root. */
 async function scanSkillsFlat(repoPath: string): Promise<Artifact[]> {
-  return scanSkillsInDirectory(repoPath, "", { requireSkillMd: true });
+  return scanSkillsInDirectory(repoPath, "");
 }
 
 async function scanSkills(repoPath: string): Promise<Artifact[]> {
   const nested = await scanSkillsNested(repoPath);
-  const nestedWithSkillMd = nested.filter((s) => s.hasSkillMd);
-  if (nestedWithSkillMd.length > 0) {
+  if (nested.length > 0) {
     return nested;
   }
   return scanSkillsFlat(repoPath);
