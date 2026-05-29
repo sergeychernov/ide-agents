@@ -31,11 +31,16 @@ function buildRows(
     const existing = installations.find(
       (i) => i.repoId === repoId && i.artifactId === artifact.id,
     );
+    const projectPath =
+      existing?.project && existing.projectPath
+        ? existing.projectPath
+        : defaultProjectPath;
+
     return {
       artifact,
       global: existing?.global ?? false,
       project: existing?.project ?? false,
-      projectPath: existing?.projectPath ?? defaultProjectPath,
+      projectPath,
       installationId: existing?.id ?? null,
     };
   });
@@ -52,8 +57,8 @@ function rowsToInstallations(
 
   for (const row of rows) {
     const prev = previous.find((i) => i.artifactId === row.artifact.id);
-    const projectPath =
-      row.projectPath.trim() || prev?.projectPath || null;
+    // Keep path when project is off so /api/apply can remove the project symlink.
+    const projectPath = row.projectPath.trim() || prev?.projectPath || null;
 
     current.push({
       id: row.installationId ?? crypto.randomUUID(),
@@ -84,6 +89,7 @@ export default function ArtifactListPage({
   const [applyingId, setApplyingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [defaultProjectPath, setDefaultProjectPath] = useState("");
+  const [sessionReady, setSessionReady] = useState(false);
 
   const visibleRows = useMemo(
     () => rows.filter((row) => row.artifact.kind === kind),
@@ -117,9 +123,8 @@ export default function ArtifactListPage({
   useEffect(() => {
     Promise.all([loadBase(), api.status()])
       .then(([, status]) => {
-        if (status.defaultProjectPath) {
-          setDefaultProjectPath(status.defaultProjectPath);
-        }
+        setDefaultProjectPath(status.defaultProjectPath ?? "");
+        setSessionReady(true);
       })
       .catch((err) =>
         setError(err instanceof Error ? err.message : String(err)),
@@ -127,18 +132,18 @@ export default function ArtifactListPage({
   }, [loadBase]);
 
   useEffect(() => {
-    if (!repoId) return;
-    const projectPath =
-      rows.find((r) => r.projectPath.trim())?.projectPath.trim() ||
-      defaultProjectPath ||
-      installations.find((i) => i.repoId === repoId)?.projectPath ||
-      "";
+    if (!repoId || !sessionReady) return;
+
+    const activeProjectPath = installations.find(
+      (i) => i.repoId === repoId && i.project && i.projectPath,
+    )?.projectPath;
+    const projectPath = defaultProjectPath || activeProjectPath || "";
 
     loadArtifacts(repoId, installations, projectPath).catch((err) =>
       setError(err instanceof Error ? err.message : String(err)),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload on repo/installations/default path, not row edits
-  }, [repoId, installations, defaultProjectPath, loadArtifacts]);
+  }, [repoId, installations, defaultProjectPath, sessionReady, loadArtifacts]);
 
   const projectSuggestions = useMemo(() => {
     const paths = recentProjects.filter(Boolean);

@@ -26,5 +26,5 @@ Use `execFile` for git commands. Support `file://` URLs. Do not store credential
 
 ## Scanning
 
-Skills: directory with `SKILL.md`, frontmatter `name`, `description`, `scope`.
-Agents: `agents/*.md`, optional frontmatter `scope`.
+Skills: `skills/<name>/SKILL.md` (nested), or `<name>/SKILL.md` at repo root (flat fallback). Frontmatter `name`, `description`, `scope` (defaults to `any` when omitted).
+Agents: `agents/*.md`, optional frontmatter `scope` (defaults to `any` when omitted).

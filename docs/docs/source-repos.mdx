@@ -9,6 +9,8 @@ ide-agents connects to **any git repository** with a predictable layout. Corpora
 
 ## Expected layout
 
+**Nested** (default):
+
 ```
 my-skills-repo/
 ├── skills/
@@ -17,6 +19,20 @@ my-skills-repo/
 └── agents/              # optional
     └── my-agent.md
 ```
+
+**Flat** (auto-detected when `skills/` is missing or has no `SKILL.md` files), e.g. [bluriesophos/cursorskills](https://github.com/bluriesophos/cursorskills):
+
+```
+my-skills-repo/
+├── code-review/
+│   └── SKILL.md
+├── debug-to-fix/
+│   └── SKILL.md
+└── agents/              # optional
+    └── my-agent.md
+```
+
+Only immediate child directories that contain `SKILL.md` are treated as skills.
 
 ## SKILL.md frontmatter
 
@@ -35,7 +51,7 @@ scope: any
 | `global` | Only Global toggle enabled |
 | `project` | Only Project toggle enabled |
 | `any` | Both toggles available (mutually exclusive) |
-| *(missing)* | Both toggles disabled |
+| *(missing)* | Same as `any` |
 
 ## Agents
 

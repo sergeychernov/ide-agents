@@ -73,6 +73,6 @@ Returned by `GET /api/repos/:id/artifacts`:
 }
 ```
 
-`allowedScope` comes from SKILL.md frontmatter. If missing, both toggles are disabled in the UI.
+`allowedScope` comes from SKILL.md frontmatter. If missing, it defaults to `any` (both toggles enabled).
 
 `targets.blocked` is true when a **non-symlink** file or directory already exists at the target path.

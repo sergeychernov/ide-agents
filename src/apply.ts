@@ -129,6 +129,7 @@ export async function applyInstallations(
       )),
     );
 
+    // projectPath is kept in config while project is off so removal can run.
     if (installation.projectPath) {
       const projectTarget = adapter.getProjectTargetPath(installation);
       results.push(

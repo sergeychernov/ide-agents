@@ -14,12 +14,12 @@ async function pathExists(filePath: string): Promise<boolean> {
 
 function parseAllowedScope(
   data: Record<string, unknown>,
-): ArtifactAllowedScope | null {
+): ArtifactAllowedScope {
   const scope = data.scope;
   if (scope === "global" || scope === "project" || scope === "any") {
     return scope;
   }
-  return null;
+  return "any";
 }
 
 function parseAgentDescription(content: string, fallbackName: string): string {
@@ -45,50 +45,105 @@ function parseAgentDescription(content: string, fallbackName: string): string {
   return fallbackName;
 }
 
-async function scanSkills(repoPath: string): Promise<Artifact[]> {
-  const skillsDir = path.join(repoPath, "skills");
-  if (!(await pathExists(skillsDir))) {
+interface ParsedSkillDir {
+  id: string;
+  name: string;
+  description: string;
+  hasSkillMd: boolean;
+  allowedScope: ArtifactAllowedScope | null;
+}
+
+async function parseSkillDirectory(
+  skillDir: string,
+  dirName: string,
+): Promise<ParsedSkillDir> {
+  const skillMdPath = path.join(skillDir, "SKILL.md");
+  const hasSkillMd = await pathExists(skillMdPath);
+
+  let name = dirName;
+  let description = "";
+  let allowedScope: ArtifactAllowedScope | null = null;
+
+  if (hasSkillMd) {
+    const raw = await readFile(skillMdPath, "utf8");
+    const parsed = matter(raw);
+    if (typeof parsed.data.name === "string" && parsed.data.name.trim()) {
+      name = parsed.data.name.trim();
+    }
+    if (typeof parsed.data.description === "string") {
+      description = parsed.data.description.trim();
+    }
+    allowedScope = parseAllowedScope(parsed.data as Record<string, unknown>);
+  }
+
+  return { id: dirName, name, description, hasSkillMd, allowedScope };
+}
+
+function toSkillArtifact(
+  sourcePath: string,
+  parsed: ParsedSkillDir,
+): Artifact {
+  return {
+    id: parsed.id,
+    kind: "skill",
+    sourcePath,
+    name: parsed.name,
+    description: parsed.description,
+    hasSkillMd: parsed.hasSkillMd,
+    allowedScope: parsed.allowedScope,
+  };
+}
+
+async function scanSkillsInDirectory(
+  parentDir: string,
+  sourcePathPrefix: string,
+  options: { requireSkillMd: boolean },
+): Promise<Artifact[]> {
+  if (!(await pathExists(parentDir))) {
     return [];
   }
 
-  const entries = await readdir(skillsDir, { withFileTypes: true });
+  const entries = await readdir(parentDir, { withFileTypes: true });
   const artifacts: Artifact[] = [];
 
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
+    if (entry.name.startsWith(".")) continue;
 
-    const skillDir = path.join(skillsDir, entry.name);
+    const skillDir = path.join(parentDir, entry.name);
     const skillMdPath = path.join(skillDir, "SKILL.md");
-    const hasSkillMd = await pathExists(skillMdPath);
-
-    let name = entry.name;
-    let description = "";
-    let allowedScope: ArtifactAllowedScope | null = null;
-
-    if (hasSkillMd) {
-      const raw = await readFile(skillMdPath, "utf8");
-      const parsed = matter(raw);
-      if (typeof parsed.data.name === "string" && parsed.data.name.trim()) {
-        name = parsed.data.name.trim();
-      }
-      if (typeof parsed.data.description === "string") {
-        description = parsed.data.description.trim();
-      }
-      allowedScope = parseAllowedScope(parsed.data as Record<string, unknown>);
+    if (options.requireSkillMd && !(await pathExists(skillMdPath))) {
+      continue;
     }
 
-    artifacts.push({
-      id: entry.name,
-      kind: "skill",
-      sourcePath: path.join("skills", entry.name),
-      name,
-      description,
-      hasSkillMd,
-      allowedScope,
-    });
+    const parsed = await parseSkillDirectory(skillDir, entry.name);
+    const relativeSource = sourcePathPrefix
+      ? path.join(sourcePathPrefix, entry.name)
+      : entry.name;
+    artifacts.push(toSkillArtifact(relativeSource, parsed));
   }
 
   return artifacts.sort((a, b) => a.id.localeCompare(b.id));
+}
+
+async function scanSkillsNested(repoPath: string): Promise<Artifact[]> {
+  return scanSkillsInDirectory(path.join(repoPath, "skills"), "skills", {
+    requireSkillMd: false,
+  });
+}
+
+/** Repos like bluriesophos/cursorskills: `<repo>/<skill-name>/SKILL.md` at root. */
+async function scanSkillsFlat(repoPath: string): Promise<Artifact[]> {
+  return scanSkillsInDirectory(repoPath, "", { requireSkillMd: true });
+}
+
+async function scanSkills(repoPath: string): Promise<Artifact[]> {
+  const nested = await scanSkillsNested(repoPath);
+  const nestedWithSkillMd = nested.filter((s) => s.hasSkillMd);
+  if (nestedWithSkillMd.length > 0) {
+    return nested;
+  }
+  return scanSkillsFlat(repoPath);
 }
 
 async function scanAgents(repoPath: string): Promise<Artifact[]> {
