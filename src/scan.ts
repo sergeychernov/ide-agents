@@ -50,7 +50,7 @@ interface ParsedSkillDir {
   name: string;
   description: string;
   hasSkillMd: boolean;
-  allowedScope: ArtifactAllowedScope | null;
+  allowedScope: ArtifactAllowedScope;
 }
 
 async function parseSkillDirectory(
@@ -62,7 +62,7 @@ async function parseSkillDirectory(
 
   let name = dirName;
   let description = "";
-  let allowedScope: ArtifactAllowedScope | null = null;
+  let allowedScope: ArtifactAllowedScope = "any";
 
   if (hasSkillMd) {
     const raw = await readFile(skillMdPath, "utf8");

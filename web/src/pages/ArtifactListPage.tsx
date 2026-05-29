@@ -137,7 +137,7 @@ export default function ArtifactListPage({
     const activeProjectPath = installations.find(
       (i) => i.repoId === repoId && i.project && i.projectPath,
     )?.projectPath;
-    const projectPath = defaultProjectPath || activeProjectPath || "";
+    const projectPath = activeProjectPath || defaultProjectPath || "";
 
     loadArtifacts(repoId, installations, projectPath).catch((err) =>
       setError(err instanceof Error ? err.message : String(err)),
