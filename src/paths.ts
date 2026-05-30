@@ -64,3 +64,14 @@ export function getWebDistDir(): string {
 export function resolveProjectPath(projectPath: string): string {
   return path.resolve(projectPath);
 }
+
+export function expandUserPath(inputPath: string): string {
+  const trimmed = inputPath.trim();
+  if (trimmed === "~") {
+    return homedir();
+  }
+  if (trimmed.startsWith("~/")) {
+    return path.join(homedir(), trimmed.slice(2));
+  }
+  return path.resolve(trimmed);
+}

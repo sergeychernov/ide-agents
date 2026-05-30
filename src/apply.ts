@@ -1,6 +1,6 @@
 import { lstat, mkdir, readlink, symlink, unlink } from "node:fs/promises";
 import path from "node:path";
-import { getAdapter } from "./adapters/cursor.js";
+import { getEnabledAdapters } from "./adapters/index.js";
 import { getRepoPath } from "./paths.js";
 import type {
   IdeAgentsConfig,
@@ -100,8 +100,12 @@ async function applyScope(
 export async function applyInstallations(
   config: IdeAgentsConfig,
 ): Promise<ApplyResult> {
-  const adapter = getAdapter(config.adapter);
+  const adapters = getEnabledAdapters(config);
   const results: ApplyResultItem[] = [];
+
+  if (adapters.length === 0) {
+    return { results };
+  }
 
   for (const installation of config.installations) {
     const repo = config.repos.find((r) => r.id === installation.repoId);
@@ -115,32 +119,35 @@ export async function applyInstallations(
     }
 
     const repoRoot = getRepoPath(repo.slug);
-    const sourcePath = adapter.getSourcePath(repoRoot, installation);
     const type = installation.kind === "skill" ? "dir" : "file";
-    const globalTarget = adapter.getGlobalTargetPath(installation);
 
-    results.push(
-      ...(await applyScope(
-        installation,
-        sourcePath,
-        type,
-        installation.global,
-        globalTarget,
-      )),
-    );
+    for (const adapter of adapters) {
+      const sourcePath = adapter.getSourcePath(repoRoot, installation);
+      const globalTarget = adapter.getGlobalTargetPath(installation);
 
-    // projectPath is kept in config while project is off so removal can run.
-    if (installation.projectPath) {
-      const projectTarget = adapter.getProjectTargetPath(installation);
       results.push(
         ...(await applyScope(
           installation,
           sourcePath,
           type,
-          installation.project,
-          projectTarget,
+          installation.global,
+          globalTarget,
         )),
       );
+
+      // projectPath is kept in config while project is off so removal can run.
+      if (installation.projectPath) {
+        const projectTarget = adapter.getProjectTargetPath(installation);
+        results.push(
+          ...(await applyScope(
+            installation,
+            sourcePath,
+            type,
+            installation.project,
+            projectTarget,
+          )),
+        );
+      }
     }
   }
 

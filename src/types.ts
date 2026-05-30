@@ -1,6 +1,19 @@
 export type ArtifactKind = "skill" | "agent";
 export type ArtifactAllowedScope = "global" | "project" | "any";
-export type AdapterId = "cursor";
+export type IdeId = "cursor" | "claude" | "codex";
+/** @deprecated use IdeId */
+export type AdapterId = IdeId;
+
+export interface IdeToolConfig {
+  enabled: boolean;
+  configPath: string;
+}
+
+export interface IdesConfig {
+  cursor: IdeToolConfig;
+  claude: IdeToolConfig;
+  codex: IdeToolConfig;
+}
 
 export interface ServerConfig {
   port: number;
@@ -27,7 +40,9 @@ export interface Installation {
 
 export interface IdeAgentsConfig {
   version: 1;
+  /** @deprecated kept for migration; use ides */
   adapter: AdapterId;
+  ides: IdesConfig;
   server: ServerConfig;
   repos: RepoConfig[];
   installations: Installation[];
@@ -71,6 +86,8 @@ export interface GitStatus {
 export interface RepoWithStatus extends RepoConfig {
   localPath: string;
   git: GitStatus;
+  skillCount: number;
+  agentCount: number;
 }
 
 export interface ApplyResultItem {
@@ -82,8 +99,6 @@ export interface ApplyResultItem {
 export interface ApplyResult {
   results: ApplyResultItem[];
 }
-
-export const PACKAGE_VERSION = "0.1.0";
 
 /** @deprecated legacy config field */
 export type Scope = "global" | "project" | "off";

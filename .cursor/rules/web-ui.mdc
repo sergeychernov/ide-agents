@@ -14,7 +14,7 @@ Vite, React 19, React Router, Mantine 9, Tabler icons. No extra UI libraries.
 
 ```
 web/src/
-├── pages/          # Settings, Skills, Agents, ArtifactListPage
+├── pages/          # Settings, Repositories, Skills, Agents, ArtifactListPage
 ├── components/     # ArtifactCard, ArtifactCardGrid, artifactRow helpers
 └── api/client.ts   # fetch wrapper; JSON Content-Type only when body present
 ```
@@ -23,7 +23,7 @@ web/src/
 
 - **Global** / **Project** icons are mutually exclusive; click applies immediately (no Save button).
 - Click active icon → deactivate and remove symlink.
-- `defaultProjectPath` from `/api/status` (CLI cwd) prefills project path input.
+- `defaultProjectPath` from `/api/status` (CLI cwd) is the only project install path; read-only in UI. Saved `projectPath` in config when project is off is kept for symlink removal only.
 - Cards: max 480px, grid `auto-fill` in `ArtifactCardGrid`.
 - Scope from frontmatter disables toggles; blocked paths (non-symlink exists) disable toggles.
 

@@ -1,5 +1,6 @@
 import { lstat } from "node:fs/promises";
-import { getAdapter } from "./adapters/cursor.js";
+import { getEnabledAdapters } from "./adapters/index.js";
+import type { IdeAgentsConfig } from "./types.js";
 import type {
   Artifact,
   ArtifactTargets,
@@ -25,27 +26,51 @@ export async function getTargetStatus(targetPath: string): Promise<TargetStatus>
   }
 }
 
+function mergeTargetStatus(
+  current: TargetStatus,
+  next: TargetStatus,
+): TargetStatus {
+  return {
+    exists: current.exists || next.exists,
+    isSymlink: current.isSymlink || next.isSymlink,
+    blocked: current.blocked || next.blocked,
+  };
+}
+
 export async function getArtifactTargets(
   artifact: Pick<Artifact, "kind" | "id">,
   projectPath: string | null,
-  adapterId: string,
+  config: IdeAgentsConfig,
 ): Promise<ArtifactTargets> {
-  const adapter = getAdapter(adapterId);
+  const adapters = getEnabledAdapters(config);
   const installation = {
     kind: artifact.kind,
     targetName: artifact.id,
     projectPath,
   };
 
-  const global = await getTargetStatus(
-    adapter.getGlobalTargetPath(installation),
-  );
+  let global: TargetStatus = {
+    exists: false,
+    isSymlink: false,
+    blocked: false,
+  };
 
   let project: TargetStatus | null = null;
-  if (projectPath) {
-    project = await getTargetStatus(
-      adapter.getProjectTargetPath(installation),
+
+  for (const adapter of adapters) {
+    const globalStatus = await getTargetStatus(
+      adapter.getGlobalTargetPath(installation),
     );
+    global = mergeTargetStatus(global, globalStatus);
+
+    if (projectPath) {
+      const projectStatus = await getTargetStatus(
+        adapter.getProjectTargetPath(installation),
+      );
+      project = project
+        ? mergeTargetStatus(project, projectStatus)
+        : projectStatus;
+    }
   }
 
   return { global, project };

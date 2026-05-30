@@ -23,7 +23,7 @@ ide-agents/          # npm package name; repo folder may differ
 2. Production: Fastify serves `web/dist` + `/api/*`. Dev: Vite :5173 proxies `/api` → backend.
 3. Git clones live in `~/.ide-agents/repos/<slug>/`.
 4. UI toggles **Global** / **Project** (mutually exclusive) → immediate `PUT /installations` + `POST /apply`.
-5. `apply.ts` creates/removes symlinks via `adapters/cursor.ts`. Never overwrite non-symlink targets.
+5. `apply.ts` creates/removes symlinks via enabled IDE adapters (`cursor`, `claude`, `codex`). Never overwrite non-symlink targets.
 
 ## Key modules
 
@@ -34,7 +34,7 @@ ide-agents/          # npm package name; repo folder may differ
 | `scan.ts` | list `skills/*/SKILL.md`, `agents/*.md`, parse frontmatter |
 | `targets.ts` | check if symlink target path is blocked |
 | `apply.ts` | symlink create/remove |
-| `adapters/cursor.ts` | map installation → `~/.cursor/` or `<project>/.cursor/` |
+| `adapters/` | map installation → IDE config dirs (`~/.cursor/`, `~/.claude/`, `~/.codex/`, project `.agents/` for Codex) |
 | `server.ts` | REST API |
 
 ## Config schema (v1)

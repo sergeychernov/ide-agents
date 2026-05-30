@@ -1,0 +1,77 @@
+---
+sidebar_position: 3
+title: Settings & IDEs
+---
+
+# Settings & IDEs
+
+The web UI has two configuration areas:
+
+| Page | Route | Purpose |
+|------|-------|---------|
+| **Settings** | `/settings` | Which AI tools you use and where their config lives |
+| **Repositories** | `/repositories` | Git catalogs to clone and manage |
+
+Skills and Agents pages install artifacts from a selected repository into every **enabled** IDE.
+
+## What do you use?
+
+On **Settings**, enable one or more tools:
+
+| Tool | Default config path | Enabled by default when |
+|------|---------------------|-------------------------|
+| **Codex** | `~/.codex/` | Directory `~/.codex` exists |
+| **Claude** | `~/.claude/` | Directory `~/.claude` exists |
+| **Cursor** | `~/.cursor/` | Directory `~/.cursor` exists |
+
+Defaults are **not** “all on”. On first run (no `ides` block in `config.json`), ide-agents scans your home directory and checks only those three folders. Already saved settings in `config.json` are kept as-is.
+
+You can change paths (e.g. `~/custom/.cursor`). Tilde (`~`) is expanded on save. At least one tool must stay enabled.
+
+Changes save immediately; saving triggers `POST /api/apply` so existing installations are synced to the new set of tools.
+
+## Where symlinks go
+
+Each tool uses its **config path** for global installs. Project installs use a subfolder under the project root (launch directory from the CLI — see [Architecture](/docs/architecture)).
+
+| Tool | Global skills | Global agents | Project subfolder |
+|------|---------------|---------------|-------------------|
+| **Cursor** | `{configPath}/skills/<name>` | `{configPath}/agents/<name>.md` | `.cursor` |
+| **Claude** | `{configPath}/skills/<name>` | `{configPath}/agents/<name>.md` | `.claude` |
+| **Codex** | `{configPath}/skills/<name>` | `{configPath}/agents/<name>.md` | `.agents` |
+
+Example with default paths and skill `tech-debt`:
+
+- Cursor global: `~/.cursor/skills/tech-debt`
+- Claude global: `~/.claude/skills/tech-debt`
+- Codex global: `~/.codex/skills/tech-debt`
+- Project (Cursor, cwd `/app`): `/app/.cursor/skills/tech-debt`
+
+Skill folders use directory symlinks; agent files use file symlinks.
+
+## config.json: `ides`
+
+```json
+{
+  "ides": {
+    "cursor": { "enabled": true, "configPath": "/Users/me/.cursor" },
+    "claude": { "enabled": false, "configPath": "/Users/me/.claude" },
+    "codex": { "enabled": true, "configPath": "/Users/me/.codex" }
+  }
+}
+```
+
+The legacy `adapter` field is still written for compatibility (first enabled tool: cursor → claude → codex).
+
+## API
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/settings` | Current `ides`, folder-based `defaults`, `home`, `version` |
+| `PUT` | `/api/settings` | Replace `ides` `{ cursor, claude, codex }` |
+
+`GET /api/status` also includes `ides` and `version` (from `package.json`).
+
+## Skill format across tools
+
+Source repos use the shared [Agent Skills](https://agentskills.io/home) layout (`SKILL.md` + frontmatter). The same git catalog can feed Cursor, Claude Code, and Codex when each tool is enabled in Settings — see [Source repositories](/docs/source-repos).

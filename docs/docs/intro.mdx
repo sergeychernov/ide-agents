@@ -5,9 +5,9 @@ title: Introduction
 
 # ide-agents
 
-**ide-agents** is a local admin for **IDE agents and skills** — Cursor subagents and skills today, more IDE adapters later — from any git repository.
+**ide-agents** is a local admin for **IDE agents and skills** from any git repository — **Cursor**, **Claude Code**, and **Codex** (configurable in Settings).
 
-Install artifacts into your IDE via **symlinks**. No copy-paste, no manual path management.
+Install artifacts into enabled tools via **symlinks**. No copy-paste, no manual path management.
 
 :::info
 Not affiliated with Cursor.
@@ -17,8 +17,8 @@ Not affiliated with Cursor.
 
 - Clones git repositories into `~/.ide-agents/repos/`
 - Scans `skills/*/SKILL.md` and optional `agents/*.md`
-- Creates symlinks in `~/.cursor/` (global) or `<project>/.cursor/` (per-project)
-- Provides a browser UI at `http://127.0.0.1:3921`
+- Creates symlinks in each enabled tool’s config dir (e.g. `~/.cursor/`, `~/.claude/`, `~/.codex/`) and per-project folders
+- Provides a browser UI at `http://127.0.0.1:3921` (Settings, Repositories, Skills, Agents)
 
 ## Quick start
 
@@ -38,5 +38,6 @@ On first run, ide-agents creates `~/.ide-agents/` (migrates from `~/.agentdesk/`
 ## Next steps
 
 - [Architecture](/docs/architecture) — how the system is structured
+- [Settings & IDEs](/docs/settings) — which tools to use and default enable rules
 - [Source repositories](/docs/source-repos) — expected repo layout and SKILL.md format
 - [Development](/docs/development) — build and contribute

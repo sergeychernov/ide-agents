@@ -1,5 +1,17 @@
 export type ArtifactKind = "skill" | "agent";
 export type ArtifactAllowedScope = "global" | "project" | "any";
+export type IdeId = "cursor" | "claude" | "codex";
+
+export interface IdeToolConfig {
+  enabled: boolean;
+  configPath: string;
+}
+
+export interface IdesConfig {
+  cursor: IdeToolConfig;
+  claude: IdeToolConfig;
+  codex: IdeToolConfig;
+}
 
 export interface GitStatus {
   branch: string | null;
@@ -17,6 +29,8 @@ export interface Repo {
   slug: string;
   localPath: string;
   git: GitStatus;
+  skillCount: number;
+  agentCount: number;
 }
 
 export interface TargetStatus {
@@ -84,18 +98,32 @@ export const api = {
   status: () =>
     request<{
       home: string;
-      adapter: string;
       port: number;
       version: string;
       defaultProjectPath: string | null;
+      ides: IdesConfig;
     }>("/api/status"),
+
+  settings: () =>
+    request<{
+      ides: IdesConfig;
+      defaults: IdesConfig;
+      home: string;
+      version: string;
+    }>("/api/settings"),
+
+  saveSettings: (ides: IdesConfig) =>
+    request<{ ides: IdesConfig }>("/api/settings", {
+      method: "PUT",
+      body: JSON.stringify({ ides }),
+    }),
 
   repos: () => request<{ repos: Repo[] }>("/api/repos"),
 
-  addRepo: (url: string, ref: string) =>
+  addRepo: (url: string, ref: string, id?: string) =>
     request<{ repo: Repo }>("/api/repos", {
       method: "POST",
-      body: JSON.stringify({ url, ref }),
+      body: JSON.stringify({ url, ref, ...(id ? { id } : {}) }),
     }),
 
   deleteRepo: (id: string) =>

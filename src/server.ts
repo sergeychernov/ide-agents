@@ -17,13 +17,20 @@ import { applyInstallations } from "./apply.js";
 import { scanRepoArtifacts } from "./scan.js";
 import { getArtifactTargets } from "./targets.js";
 import {
+  expandUserPath,
   getIdeAgentsHome,
   getRepoPath,
   getWebDistDir,
   slugFromUrl,
 } from "./paths.js";
-import type { IdeAgentsConfig, Installation, RepoWithStatus } from "./types.js";
-import { PACKAGE_VERSION as VERSION } from "./types.js";
+import type {
+  IdeAgentsConfig,
+  IdesConfig,
+  Installation,
+  RepoWithStatus,
+} from "./types.js";
+import { defaultAdapterFromIdes, getDefaultIdes } from "./ides.js";
+import { PACKAGE_VERSION as VERSION } from "./version.js";
 
 export interface ServerOptions {
   port: number;
@@ -44,11 +51,64 @@ export async function createServer(options: ServerOptions) {
     const config = await readConfig();
     return {
       home: getIdeAgentsHome(),
-      adapter: config.adapter,
       port: options.port,
       version: VERSION,
       defaultProjectPath: options.launchCwd ?? null,
+      ides: config.ides,
     };
+  });
+
+  app.get("/api/settings", async () => {
+    const config = await readConfig();
+    return {
+      ides: config.ides,
+      defaults: getDefaultIdes(),
+      home: getIdeAgentsHome(),
+      version: VERSION,
+    };
+  });
+
+  app.put<{ Body: { ides?: IdesConfig } }>("/api/settings", async (request, reply) => {
+    const { ides } = request.body ?? {};
+    if (!ides) {
+      return reply.status(400).send({ error: "ides is required" });
+    }
+
+    for (const key of ["cursor", "claude", "codex"] as const) {
+      const entry = ides[key];
+      if (!entry || typeof entry.configPath !== "string" || !entry.configPath.trim()) {
+        return reply.status(400).send({ error: `Invalid config for ${key}` });
+      }
+    }
+
+    const normalized = {
+      cursor: {
+        enabled: Boolean(ides.cursor.enabled),
+        configPath: expandUserPath(ides.cursor.configPath),
+      },
+      claude: {
+        enabled: Boolean(ides.claude.enabled),
+        configPath: expandUserPath(ides.claude.configPath),
+      },
+      codex: {
+        enabled: Boolean(ides.codex.enabled),
+        configPath: expandUserPath(ides.codex.configPath),
+      },
+    };
+
+    if (
+      !normalized.cursor.enabled &&
+      !normalized.claude.enabled &&
+      !normalized.codex.enabled
+    ) {
+      return reply.status(400).send({ error: "At least one IDE must be enabled" });
+    }
+
+    const config = await readConfig();
+    config.ides = normalized;
+    config.adapter = defaultAdapterFromIdes(config.ides);
+    await writeConfig(config);
+    return { ides: config.ides };
   });
 
   app.get("/api/repos", async () => {
@@ -57,10 +117,14 @@ export async function createServer(options: ServerOptions) {
 
     for (const repo of config.repos) {
       const git = await getGitStatusWithoutFetch(repo.slug, repo.ref);
+      const repoPath = getRepoPath(repo.slug);
+      const artifacts = await scanRepoArtifacts(repoPath);
       repos.push({
         ...repo,
-        localPath: getRepoPath(repo.slug),
+        localPath: repoPath,
         git,
+        skillCount: artifacts.filter((a) => a.kind === "skill").length,
+        agentCount: artifacts.filter((a) => a.kind === "agent").length,
       });
     }
 
@@ -182,11 +246,7 @@ export async function createServer(options: ServerOptions) {
       const artifacts = await Promise.all(
         scanned.map(async (artifact) => ({
           ...artifact,
-          targets: await getArtifactTargets(
-            artifact,
-            projectPath,
-            config.adapter,
-          ),
+          targets: await getArtifactTargets(artifact, projectPath, config),
         })),
       );
       return { artifacts };

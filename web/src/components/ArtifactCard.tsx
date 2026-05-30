@@ -68,8 +68,6 @@ export interface ArtifactCardProps {
   applying?: boolean;
   onGlobalClick: () => void;
   onProjectClick: () => void;
-  onProjectPathChange: (path: string) => void;
-  onProjectPathBlur: () => void;
 }
 
 export default function ArtifactCard({
@@ -77,8 +75,6 @@ export default function ArtifactCard({
   applying,
   onGlobalClick,
   onProjectClick,
-  onProjectPathChange,
-  onProjectPathBlur,
 }: ArtifactCardProps) {
   return (
     <Card withBorder padding="lg" radius="md" w="100%" maw={480}>
@@ -117,12 +113,11 @@ export default function ArtifactCard({
 
         <TextInput
           label="Project path"
+          description="Directory where ide-agents was started"
           size="sm"
           value={row.projectPath}
-          list="recent-projects"
+          readOnly
           disabled={applying}
-          onChange={(e) => onProjectPathChange(e.currentTarget.value)}
-          onBlur={onProjectPathBlur}
         />
       </Stack>
     </Card>

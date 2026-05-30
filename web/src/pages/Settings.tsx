@@ -1,169 +1,139 @@
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
-  Badge,
-  Button,
+  Checkbox,
   Code,
-  Group,
   Paper,
-  SimpleGrid,
   Stack,
   Text,
   TextInput,
   Title,
 } from "@mantine/core";
-import { api, type GitStatus, type Repo } from "../api/client";
+import { api, type IdeId, type IdesConfig } from "../api/client";
+import { toDisplayPath } from "../pathDisplay";
 
-function formatBehind(git: GitStatus): string {
-  if (git.error) return git.error;
-  if (git.behind === null) return "Unknown (fetch to check)";
-  if (git.behind === 0) return "Up to date";
-  return `${git.behind} commit(s) behind remote`;
-}
-
-function repoStatus(repo: Repo): string {
-  const parts = [repo.git.dirty ? "Dirty working tree" : "Clean"];
-  if (repo.git.behind !== null && repo.git.behind > 0) {
-    parts.push(`${repo.git.behind} behind`);
-  } else if (repo.git.behind === 0) {
-    parts.push("up to date");
-  }
-  return parts.join(" · ");
-}
+const IDE_ROWS: { id: IdeId; label: string }[] = [
+  { id: "codex", label: "Codex" },
+  { id: "claude", label: "Claude" },
+  { id: "cursor", label: "Cursor" },
+];
 
 export default function Settings() {
-  const [repos, setRepos] = useState<Repo[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [url, setUrl] = useState("");
-  const [ref, setRef] = useState("main");
-  const [loading, setLoading] = useState(false);
+  const [ides, setIdes] = useState<IdesConfig | null>(null);
+  const [home, setHome] = useState("");
+  const [version, setVersion] = useState("");
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [status, setStatus] = useState<{ home: string; version: string } | null>(
-    null,
-  );
 
-  const loadRepos = useCallback(async () => {
-    const data = await api.repos();
-    setRepos(data.repos);
-    if (data.repos.length > 0 && !selectedId) {
-      setSelectedId(data.repos[0]!.id);
-    }
-  }, [selectedId]);
+  const load = useCallback(async () => {
+    const data = await api.settings();
+    setIdes(data.ides);
+    setHome(data.home);
+    setVersion(data.version);
+  }, []);
 
   useEffect(() => {
-    api.status().then((s) => setStatus({ home: s.home, version: s.version }));
-    loadRepos().catch((err) =>
+    load().catch((err) =>
       setError(err instanceof Error ? err.message : String(err)),
     );
-  }, [loadRepos]);
+  }, [load]);
 
-  const selected = repos.find((r) => r.id === selectedId) ?? null;
-
-  async function handleAdd(e: FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setMessage(null);
-    try {
-      const { repo } = await api.addRepo(url.trim(), ref.trim() || "main");
-      setRepos((prev) => [...prev, repo]);
-      setSelectedId(repo.id);
-      setUrl("");
-      setMessage(`Cloned ${repo.url}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleFetch(repoId: string) {
-    setLoading(true);
-    setError(null);
-    setMessage(null);
-    try {
-      const { git } = await api.fetchRepo(repoId);
-      setRepos((prev) =>
-        prev.map((r) => (r.id === repoId ? { ...r, git } : r)),
-      );
-      setMessage(formatBehind(git));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handlePull(repoId: string) {
-    setLoading(true);
-    setError(null);
-    setMessage(null);
-    try {
-      const { git } = await api.pullRepo(repoId);
-      setRepos((prev) =>
-        prev.map((r) => (r.id === repoId ? { ...r, git } : r)),
-      );
-      setMessage("Pull completed");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleDelete(repoId: string) {
-    if (!confirm("Remove this repository from config?")) return;
-    setLoading(true);
-    setError(null);
-    try {
-      await api.deleteRepo(repoId);
-      setRepos((prev) => prev.filter((r) => r.id !== repoId));
-      if (selectedId === repoId) {
-        setSelectedId(null);
+  const persist = useCallback(
+    async (next: IdesConfig) => {
+      setSaving(true);
+      setError(null);
+      setMessage(null);
+      try {
+        const { ides: saved } = await api.saveSettings(next);
+        setIdes(saved);
+        setMessage("Settings saved");
+        await api.apply();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setSaving(false);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
+    },
+    [],
+  );
+
+  function updateIde(id: IdeId, patch: Partial<IdesConfig[IdeId]>) {
+    if (!ides) return;
+    const next = {
+      ...ides,
+      [id]: { ...ides[id], ...patch },
+    };
+    const enabledCount = (["cursor", "claude", "codex"] as const).filter(
+      (key) => next[key].enabled,
+    ).length;
+    if (enabledCount === 0) {
+      setError("At least one IDE must be enabled");
+      return;
     }
+    setIdes(next);
+    void persist(next);
   }
+
+  function savePath(id: IdeId) {
+    if (!ides) return;
+    void persist(ides);
+  }
+
+  if (!ides) {
+    return null;
+  }
+
+  const homePrefix = home.replace(/\/\.ide-agents$/, "") || home;
 
   return (
     <Stack gap="lg">
       <Stack gap={4}>
         <Title order={2}>Settings</Title>
-        {status && (
-          <Text size="sm" c="dimmed">
-            Data directory: <Code>{status.home}</Code> · v{status.version}
-          </Text>
-        )}
+        <Text size="sm" c="dimmed">
+          Data directory: <Code>{home}</Code> · v{version}
+        </Text>
       </Stack>
 
       <Paper withBorder p="md" radius="md">
-        <Stack gap="md">
-          <Title order={4}>Add repository</Title>
-          <form onSubmit={handleAdd}>
-            <Stack gap="md">
-              <TextInput
-                label="Git URL"
-                placeholder="https://github.com/org/skills.git or file:///path/to/repo"
-                value={url}
-                onChange={(e) => setUrl(e.currentTarget.value)}
-                required
+        <Stack gap="lg">
+          <Title order={4}>What do you use?</Title>
+          <Text size="sm" c="dimmed">
+            Enabled tools receive symlinks when you install skills or agents.
+            At least one tool should stay enabled.
+          </Text>
+
+          {IDE_ROWS.map(({ id, label }) => (
+            <Stack key={id} gap="xs">
+              <Checkbox
+                label={label}
+                checked={ides[id].enabled}
+                disabled={saving}
+                onChange={(e) =>
+                  updateIde(id, { enabled: e.currentTarget.checked })
+                }
               />
               <TextInput
-                label="Ref (branch/tag)"
-                value={ref}
-                onChange={(e) => setRef(e.currentTarget.value)}
+                label="Config path"
+                value={toDisplayPath(ides[id].configPath, homePrefix)}
+                disabled={saving || !ides[id].enabled}
+                onChange={(e) =>
+                  setIdes((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          [id]: {
+                            ...prev[id],
+                            configPath: e.currentTarget.value,
+                          },
+                        }
+                      : prev,
+                  )
+                }
+                onBlur={() => savePath(id)}
               />
-              <Group>
-                <Button type="submit" loading={loading}>
-                  Add / Clone
-                </Button>
-              </Group>
             </Stack>
-          </form>
+          ))}
         </Stack>
       </Paper>
 
@@ -176,126 +146,6 @@ export default function Settings() {
         <Alert color="green" title="Success" variant="light">
           {message}
         </Alert>
-      )}
-
-      <Stack gap="md">
-        <Title order={4}>Repositories</Title>
-        {repos.length === 0 ? (
-          <Text c="dimmed">No repositories yet. Add one above.</Text>
-        ) : (
-          repos.map((repo) => {
-            const isSelected = selectedId === repo.id;
-            return (
-              <Paper
-                key={repo.id}
-                withBorder
-                p="md"
-                radius="md"
-                style={{
-                  cursor: "pointer",
-                  borderColor: isSelected
-                    ? "var(--mantine-color-blue-outline)"
-                    : undefined,
-                  background: isSelected
-                    ? "var(--mantine-color-blue-light)"
-                    : undefined,
-                }}
-                onClick={() => setSelectedId(repo.id)}
-              >
-                <Stack gap="sm">
-                  <Group justify="space-between" align="flex-start" wrap="wrap">
-                    <Stack gap={2}>
-                      <Text fw={600}>{repo.id}</Text>
-                      <Text size="sm" c="dimmed" style={{ wordBreak: "break-all" }}>
-                        {repo.url}
-                      </Text>
-                    </Stack>
-                    {isSelected && <Badge color="blue">Selected</Badge>}
-                  </Group>
-
-                  <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xs">
-                    <Text size="sm">
-                      <Text span c="dimmed">
-                        Local path:{" "}
-                      </Text>
-                      <Code block mt={4}>
-                        {repo.localPath}
-                      </Code>
-                    </Text>
-                    <Text size="sm">
-                      <Text span c="dimmed">
-                        Branch:{" "}
-                      </Text>
-                      {repo.git.branch ?? "—"}
-                    </Text>
-                    <Text size="sm">
-                      <Text span c="dimmed">
-                        Commit:{" "}
-                      </Text>
-                      <Code>{repo.git.sha?.slice(0, 8) ?? "—"}</Code>
-                    </Text>
-                    <Text size="sm">
-                      <Text span c="dimmed">
-                        Status:{" "}
-                      </Text>
-                      {repoStatus(repo)}
-                    </Text>
-                  </SimpleGrid>
-
-                  {isSelected && (
-                    <Group
-                      gap="xs"
-                      mt="xs"
-                      onClick={(e) => e.stopPropagation()}
-                      wrap="wrap"
-                    >
-                      <Button
-                        variant="light"
-                        size="sm"
-                        disabled={loading}
-                        onClick={() => handleFetch(repo.id)}
-                      >
-                        Fetch
-                      </Button>
-                      <Button
-                        variant="light"
-                        size="sm"
-                        disabled={loading}
-                        onClick={() => handlePull(repo.id)}
-                      >
-                        Pull
-                      </Button>
-                      <Button
-                        variant="light"
-                        size="sm"
-                        disabled={loading}
-                        onClick={() => handleFetch(repo.id)}
-                      >
-                        Check for updates
-                      </Button>
-                      <Button
-                        variant="light"
-                        color="red"
-                        size="sm"
-                        disabled={loading}
-                        onClick={() => handleDelete(repo.id)}
-                      >
-                        Remove
-                      </Button>
-                    </Group>
-                  )}
-                </Stack>
-              </Paper>
-            );
-          })
-        )}
-      </Stack>
-
-      {selected && (
-        <Text size="sm" c="dimmed">
-          Selected: <Text span fw={600}>{selected.id}</Text>. Use Skills or Agents
-          to install from this repo.
-        </Text>
       )}
     </Stack>
   );

@@ -2,16 +2,25 @@ import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { homedir } from "node:os";
 import { getConfigPath, getIdeAgentsHome } from "./paths.js";
-import type { IdeAgentsConfig, Installation } from "./types.js";
+import {
+  defaultAdapterFromIdes,
+  getDefaultIdes,
+  migrateIdesConfig,
+} from "./ides.js";
+import type { IdeAgentsConfig, Installation, RepoConfig } from "./types.js";
 
-const DEFAULT_CONFIG: IdeAgentsConfig = {
-  version: 1,
-  adapter: "cursor",
-  server: { port: 3921 },
-  repos: [],
-  installations: [],
-  recentProjects: [],
-};
+function buildDefaultConfig(): IdeAgentsConfig {
+  const ides = getDefaultIdes();
+  return {
+    version: 1,
+    adapter: defaultAdapterFromIdes(ides),
+    ides,
+    server: { port: 3921 },
+    repos: [],
+    installations: [],
+    recentProjects: [],
+  };
+}
 
 const LEGACY_HOME = path.join(homedir(), ".agentdesk");
 
@@ -44,6 +53,32 @@ function migrateInstallation(raw: unknown): Installation {
   };
 }
 
+function isLegacySampleRepo(repo: RepoConfig): boolean {
+  if (repo.id === "sample") {
+    return true;
+  }
+  const normalized = repo.url.toLowerCase();
+  return (
+    normalized.includes("fixtures/sample-repo") ||
+    normalized.includes("fixtures%2fsample-repo")
+  );
+}
+
+function stripLegacySampleRepo(config: IdeAgentsConfig): IdeAgentsConfig {
+  const repos = config.repos.filter((r) => !isLegacySampleRepo(r));
+  if (repos.length === config.repos.length) {
+    return config;
+  }
+  const removedIds = new Set(
+    config.repos.filter(isLegacySampleRepo).map((r) => r.id),
+  );
+  return {
+    ...config,
+    repos,
+    installations: config.installations.filter((i) => !removedIds.has(i.repoId)),
+  };
+}
+
 async function migrateLegacyHome(): Promise<void> {
   const home = getIdeAgentsHome();
   if (home === LEGACY_HOME) {
@@ -66,21 +101,32 @@ export async function readConfig(): Promise<IdeAgentsConfig> {
   await ensureIdeAgentsHome();
   const configPath = getConfigPath();
 
+  const defaults = buildDefaultConfig();
+
   if (!(await fileExists(configPath))) {
-    await writeConfig(DEFAULT_CONFIG);
-    return structuredClone(DEFAULT_CONFIG);
+    await writeConfig(defaults);
+    return structuredClone(defaults);
   }
 
   const raw = await readFile(configPath, "utf8");
   const parsed = JSON.parse(raw) as IdeAgentsConfig;
-  return {
-    ...DEFAULT_CONFIG,
+  const ides = migrateIdesConfig(parsed);
+  let config: IdeAgentsConfig = {
+    ...defaults,
     ...parsed,
-    server: { ...DEFAULT_CONFIG.server, ...parsed.server },
+    adapter: parsed.adapter ?? defaultAdapterFromIdes(ides),
+    ides,
+    server: { ...defaults.server, ...parsed.server },
     repos: parsed.repos ?? [],
     installations: (parsed.installations ?? []).map(migrateInstallation),
     recentProjects: parsed.recentProjects ?? [],
   };
+  const withoutSample = stripLegacySampleRepo(config);
+  if (withoutSample.repos.length !== config.repos.length) {
+    await writeConfig(withoutSample);
+    config = withoutSample;
+  }
+  return config;
 }
 
 export async function writeConfig(config: IdeAgentsConfig): Promise<void> {

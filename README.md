@@ -1,6 +1,6 @@
 # ide-agents
 
-Local admin for **IDE agents and skills** (Cursor and similar) from any git repository.
+Local admin for **IDE agents and skills** from any git repository — **Cursor**, **Claude Code**, and **Codex** (enable in Settings).
 
 Install skills and subagents into your IDE via symlinks — no copy-paste, no manual path juggling.
 
@@ -11,8 +11,8 @@ Install skills and subagents into your IDE via symlinks — no copy-paste, no ma
 
 - Clones git repositories into `~/.ide-agents/repos/`
 - Scans `skills/*/SKILL.md` and optional `agents/*.md`
-- Creates symlinks in `~/.cursor/` (global) or `<project>/.cursor/` (per-project)
-- Provides a browser UI for repos, skills, and agents
+- Creates symlinks in each enabled tool’s config directory and per-project folders
+- Provides a browser UI: Settings, Repositories, Skills, Agents
 
 **Not affiliated with Cursor.**
 
@@ -59,10 +59,16 @@ ide-agents --port 3922    # custom port
 ide-agents --no-open      # do not open browser
 ```
 
+## Settings
+
+Open **Settings** (`/settings`) and enable the tools you use (Codex, Claude, Cursor). Set each **config path** (defaults: `~/.codex`, `~/.claude`, `~/.cursor`).
+
+On first run, a tool is enabled only if its default folder already exists in your home directory. You can change paths and toggles anytime; installs apply to all enabled tools.
+
 ## Add a repository
 
-1. Open **Settings** in the UI
-2. Enter a git URL and branch (default `main`)
+1. Open **Repositories** in the UI
+2. Pick a suggested catalog or enter a git URL and branch (default `main`)
 3. Click **Add / Clone**
 
 Your repo should contain:
@@ -89,10 +95,13 @@ Private repos: configure SSH or `gh` auth yourself — ide-agents does not store
 2. Select a repository
 3. Click **Global** (🌐) or **Project** (📁) on a card — symlinks apply immediately
 
-| Kind  | Global                         | Project                              |
-|-------|--------------------------------|--------------------------------------|
-| Skill | `~/.cursor/skills/<name>`      | `<project>/.cursor/skills/<name>`    |
-| Agent | `~/.cursor/agents/<name>.md`   | `<project>/.cursor/agents/<name>.md` |
+| Tool   | Global (default config path) | Project subfolder |
+|--------|------------------------------|-------------------|
+| Cursor | `~/.cursor/`                 | `.cursor`         |
+| Claude | `~/.claude/`                 | `.claude`         |
+| Codex  | `~/.codex/`                  | `.agents`         |
+
+Global paths use your configured **config path** per tool. Project path is the directory where you started `ide-agents`.
 
 Click the active icon again to remove the symlink (only if target is already a symlink).
 
@@ -124,10 +133,12 @@ Then add `file://$(pwd)` in the UI.
 
 ```
 ~/.ide-agents/
-├── config.json
+├── config.json     # repos, installations, ides (per-tool enable + paths)
 └── repos/
     └── <slug>/     # git clone
 ```
+
+Docs: [Settings & IDEs](https://ide-agents.vercel.app/docs/settings) on the project site.
 
 ## License
 

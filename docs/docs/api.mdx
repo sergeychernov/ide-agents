@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 6
 title: REST API
 ---
 
@@ -13,16 +13,18 @@ Default port: **3921**
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/status` | Server info, `defaultProjectPath` |
-| `GET` | `/repos` | List repos with git status |
-| `POST` | `/repos` | Clone repo `{ url, ref? }` |
+| `GET` | `/status` | Server info, `ides`, `defaultProjectPath`, `version` |
+| `GET` | `/settings` | `ides`, folder-based defaults, `home`, `version` |
+| `PUT` | `/settings` | Update `ides` (then re-apply from UI) |
+| `GET` | `/repos` | List repos with git status and skill/agent counts |
+| `POST` | `/repos` | Clone repo `{ url, ref?, id? }` |
 | `DELETE` | `/repos/:id` | Remove repo from config |
 | `POST` | `/repos/:id/fetch` | `git fetch` |
 | `POST` | `/repos/:id/pull` | `git pull` |
 | `GET` | `/repos/:id/artifacts` | Scan skills and agents |
 | `GET` | `/installations` | Current installations |
 | `PUT` | `/installations` | Replace installations array |
-| `POST` | `/apply` | Apply symlinks from config |
+| `POST` | `/apply` | Apply symlinks for all enabled IDEs |
 
 ### Query parameters
 
@@ -39,11 +41,27 @@ curl http://127.0.0.1:3921/api/status
 ```json
 {
   "home": "/Users/me/.ide-agents",
-  "adapter": "cursor",
   "port": 3921,
-  "version": "0.1.0",
-  "defaultProjectPath": "/Users/me/code/my-app"
+  "version": "0.1.1",
+  "defaultProjectPath": "/Users/me/code/my-app",
+  "ides": {
+    "cursor": { "enabled": true, "configPath": "/Users/me/.cursor" },
+    "claude": { "enabled": false, "configPath": "/Users/me/.claude" },
+    "codex": { "enabled": true, "configPath": "/Users/me/.codex" }
+  }
 }
+```
+
+### Settings
+
+```bash
+curl http://127.0.0.1:3921/api/settings
+```
+
+```bash
+curl -X PUT http://127.0.0.1:3921/api/settings \
+  -H 'Content-Type: application/json' \
+  -d '{"ides":{"cursor":{"enabled":true,"configPath":"~/.cursor"},"claude":{"enabled":false,"configPath":"~/.claude"},"codex":{"enabled":true,"configPath":"~/.codex"}}}'
 ```
 
 ### Apply
@@ -56,6 +74,7 @@ curl -X POST http://127.0.0.1:3921/api/apply
 {
   "results": [
     { "path": "/Users/me/.cursor/skills/hello", "action": "created" },
+    { "path": "/Users/me/.claude/skills/hello", "action": "created" },
     { "path": "/Users/me/code/app/.cursor/skills/hello", "action": "removed" }
   ]
 }

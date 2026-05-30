@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 4
 title: Data model
 ---
 
@@ -13,6 +13,11 @@ Stored at `~/.ide-agents/config.json`:
 {
   "version": 1,
   "adapter": "cursor",
+  "ides": {
+    "cursor": { "enabled": true, "configPath": "/Users/me/.cursor" },
+    "claude": { "enabled": true, "configPath": "/Users/me/.claude" },
+    "codex": { "enabled": false, "configPath": "/Users/me/.codex" }
+  },
   "server": { "port": 3921 },
   "repos": [
     {
@@ -39,20 +44,33 @@ Stored at `~/.ide-agents/config.json`:
 }
 ```
 
+### `ides`
+
+Per-tool settings — see [Settings & IDEs](/docs/settings).
+
+| Field | Description |
+|-------|-------------|
+| `enabled` | If true, `apply` creates symlinks for this tool |
+| `configPath` | Global config directory (default `~/.cursor`, `~/.claude`, or `~/.codex`) |
+
+On first config creation, `enabled` is set only when the matching directory already exists under `~`.
+
 ### Installation fields
 
 | Field | Description |
 |-------|-------------|
 | `kind` | `"skill"` or `"agent"` |
-| `global` | Symlink in `~/.cursor/...` |
-| `project` | Symlink in `<project>/.cursor/...` |
-| `projectPath` | Required when `project` is true; preserved when off for symlink removal |
+| `global` | Symlink under each enabled tool’s `configPath` |
+| `project` | Symlink under `<project>/<tool-subfolder>/...` |
+| `projectPath` | Active installs use CLI launch cwd; when `project` is off, the previous path is kept so removal can run |
 
-Global and project are **mutually exclusive** in the UI — at most one active per artifact.
+Global and project are **mutually exclusive** in the UI — at most one active per artifact per tool.
 
 ### Legacy migration
 
-Older configs used `scope: "global" | "project" | "off"`. These are migrated on read to `global` / `project` booleans.
+- `scope: "global" | "project" | "off"` → `global` / `project` booleans
+- Configs without `ides` → defaults from home-folder detection
+- `adapter` kept for compatibility (first enabled IDE)
 
 ## Artifact (scanned, not persisted)
 
@@ -75,4 +93,4 @@ Returned by `GET /api/repos/:id/artifacts`:
 
 `allowedScope` comes from SKILL.md frontmatter. If missing, it defaults to `any` (both toggles enabled).
 
-`targets.blocked` is true when a **non-symlink** file or directory already exists at the target path.
+`targets` aggregates status across **all enabled** IDEs: `blocked` if any tool has a non-symlink at the target path.

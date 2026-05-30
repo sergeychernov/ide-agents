@@ -4,6 +4,7 @@ const sidebars: SidebarsConfig = {
   docsSidebar: [
     'intro',
     'architecture',
+    'settings',
     'data-model',
     'source-repos',
     'api',

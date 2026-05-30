@@ -17,8 +17,10 @@ flowchart LR
   API --> Git[git.ts]
   API --> Scan[scan.ts]
   API --> Apply[apply.ts]
-  Apply --> Adapter[adapters/cursor.ts]
-  Adapter --> FS[~/.cursor symlinks]
+  Apply --> Adapters[adapters/]
+  Adapters --> Cursor[~/.cursor]
+  Adapters --> Claude[~/.claude]
+  Adapters --> Codex[~/.codex]
   Git --> Repos[~/.ide-agents/repos]
 ```
 
@@ -30,15 +32,15 @@ ide-agents/           # npm package (GitHub repo folder may differ)
 │   ├── cli.ts        # Entry: start server, open browser
 │   ├── server.ts     # Fastify routes + static files
 │   ├── config.ts     # ~/.ide-agents/config.json
+│   ├── ides.ts       # default IDE detection, migration
 │   ├── git.ts        # clone, fetch, pull, status
 │   ├── scan.ts       # artifact discovery + frontmatter
 │   ├── apply.ts      # symlink management
 │   ├── targets.ts    # path blocking checks
-│   └── adapters/
-│       └── cursor.ts # IDE path mapping
+│   └── adapters/     # per-IDE path mapping
 ├── web/              # Vite + React + Mantine
 │   └── src/
-│       ├── pages/    # Settings, Skills, Agents
+│       ├── pages/    # Settings, Repositories, Skills, Agents
 │       └── components/
 ├── docs/             # This Docusaurus site
 └── fixtures/         # Sample repo for testing
@@ -64,18 +66,17 @@ npm run dev
 - Backend: `tsx watch src/cli.ts --no-open` on port **3921**
 - Frontend: Vite on port **5173** with `/api` proxy to backend
 
-## Adapter pattern
+## IDE adapters
 
-MVP supports one adapter: **`cursor`**.
+Enabled tools come from [Settings](/docs/settings) (`config.ides`). `apply.ts` runs each enabled adapter for every installation.
 
-The adapter maps an installation to filesystem paths:
+| IDE | Config path (default) | Project subfolder |
+|-----|------------------------|-----------------|
+| Cursor | `~/.cursor` | `.cursor` |
+| Claude | `~/.claude` | `.claude` |
+| Codex | `~/.codex` | `.agents` |
 
-| Kind  | Global                         | Project                              |
-|-------|--------------------------------|--------------------------------------|
-| Skill | `~/.cursor/skills/<name>`      | `<project>/.cursor/skills/<name>`    |
-| Agent | `~/.cursor/agents/<name>.md`   | `<project>/.cursor/agents/<name>.md` |
-
-Future adapters for other AI IDEs would implement the same interface in `src/adapters/`.
+Global targets: `{configPath}/skills/<name>` and `{configPath}/agents/<name>.md`.
 
 ## Apply safety
 
@@ -90,7 +91,7 @@ When creating symlinks, ide-agents:
 
 ```
 ~/.ide-agents/
-├── config.json       # repos, installations, settings
+├── config.json       # repos, installations, ides
 └── repos/
     └── <slug>/       # git working copy
         ├── skills/
@@ -99,4 +100,4 @@ When creating symlinks, ide-agents:
 
 Legacy data in `~/.agentdesk/` is renamed to `~/.ide-agents/` on first run.
 
-The CLI records `launchCwd` at startup and exposes it as `defaultProjectPath` in `/api/status` for the UI.
+The CLI records `launchCwd` at startup and exposes it as `defaultProjectPath` in `/api/status` for the UI (read-only project install path).
