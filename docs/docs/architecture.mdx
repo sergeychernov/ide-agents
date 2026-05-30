@@ -9,19 +9,19 @@ ide-agents is a single npm package with three layers: **CLI**, **HTTP API**, and
 
 ```mermaid
 flowchart LR
-  CLI[cli.ts] --> Server[server.ts Fastify]
-  Server --> API[/api/*]
-  Server --> Static[web/dist]
-  UI[React UI] --> API
-  API --> Config[config.ts]
-  API --> Git[git.ts]
-  API --> Scan[scan.ts]
-  API --> Apply[apply.ts]
-  Apply --> Adapters[adapters/]
-  Adapters --> Cursor[~/.cursor]
-  Adapters --> Claude[~/.claude]
-  Adapters --> Codex[~/.codex]
-  Git --> Repos[~/.ide-agents/repos]
+  CLI["cli.ts"] --> Server["server.ts · Fastify"]
+  Server --> API["/api/*"]
+  Server --> Static["web/dist"]
+  UI["React UI"] --> API
+  API --> Config["config.ts"]
+  API --> Git["git.ts"]
+  API --> Scan["scan.ts"]
+  API --> Apply["apply.ts"]
+  Apply --> Adapters["adapters/"]
+  Adapters --> Cursor["~/.cursor"]
+  Adapters --> Claude["~/.claude"]
+  Adapters --> Codex["~/.codex"]
+  Git --> Repos["~/.ide-agents/repos"]
 ```
 
 ## Repository layout
@@ -35,9 +35,16 @@ ide-agents/           # npm package (GitHub repo folder may differ)
 │   ├── ides.ts       # default IDE detection, migration
 │   ├── git.ts        # clone, fetch, pull, status
 │   ├── scan.ts       # artifact discovery + frontmatter
-│   ├── apply.ts      # symlink management
+│   ├── apply.ts      # symlink management + project .gitignore
+│   ├── gitignore.ts  # managed .gitignore entries
+│   ├── template.ts   # bootstrap empty repos from template/
 │   ├── targets.ts    # path blocking checks
+│   ├── paths.ts      # home, repo paths, tilde expansion
+│   ├── version.ts    # package version for API
 │   └── adapters/     # per-IDE path mapping
+├── template/         # Starter catalog (shipped in npm package)
+│   ├── skills/
+│   └── agents/
 ├── web/              # Vite + React + Mantine
 │   └── src/
 │       ├── pages/    # Settings, Repositories, Skills, Agents
@@ -55,6 +62,8 @@ ide-agents      # node dist/cli.js
 ```
 
 One process serves both the API and the built React app from `web/dist`.
+
+If the configured port (default **3921**) is busy, the CLI picks the next free port (up to nine attempts).
 
 ### Development
 
@@ -85,6 +94,23 @@ When creating symlinks, ide-agents:
 2. Skips if symlink already points to the correct source (idempotent)
 3. **Never** overwrites a regular file or directory — returns an error instead
 4. On deactivation, removes symlinks only (never touches non-symlink targets)
+
+## Project gitignore
+
+For **project** installs inside a git repository, `apply.ts` adds symlink paths to `.gitignore` under a managed block:
+
+```
+# ide-agents (managed — do not edit manually)
+.cursor/skills/my-skill
+```
+
+Entries are removed when the project install is deactivated. Non-git project roots are skipped.
+
+## Empty-repo bootstrap
+
+When a cloned repository has no skills or agents (only GitHub init files like `README.md`), `template.ts` copies the bundled `template/` catalog into the clone. On `POST /api/repos`, this runs automatically; for an already-cloned empty repo, use **Add starter template** in the UI or `POST /api/repos/:id/bootstrap`.
+
+If the remote allows push, ide-agents commits and pushes the bootstrap (`chore: bootstrap skills catalog from ide-agents template`).
 
 ## Data on disk
 

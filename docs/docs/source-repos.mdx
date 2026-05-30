@@ -77,6 +77,19 @@ file:///absolute/path/to/repo
 
 Configure SSH or `gh` authentication yourself. ide-agents does **not** store tokens.
 
+### Empty repository bootstrap
+
+If the clone has **no installable artifacts** (empty repo or only GitHub init files such as `README.md` / `.gitignore`), ide-agents automatically copies a **starter template** from the npm package:
+
+- Demo skill `hello` and agent `oracle`
+- Example `.cursor/rules/`, `.claude/CLAUDE.md`, `.agents/AGENTS.md`
+
+After clone, the UI shows how many skills and agents were added and whether the bootstrap was pushed to the remote.
+
+For a repo that was cloned before bootstrap existed (or bootstrap was skipped), expand the repo card on **Repositories** and click **Add starter template**. The repo must still be empty — non-empty catalogs return an error.
+
+See [REST API](/docs/api#bootstrap-empty-repo) for the `POST /api/repos/:id/bootstrap` endpoint.
+
 ## Installing artifacts
 
 1. Open **Skills** or **Agents**

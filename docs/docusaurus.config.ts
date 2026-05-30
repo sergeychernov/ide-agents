@@ -10,6 +10,10 @@ const siteUrl =
 const config: Config = {
   title: 'ide-agents',
   tagline: 'Local admin for IDE agents and skills from git',
+  markdown: {
+    mermaid: true,
+  },
+  themes: ['@docusaurus/theme-mermaid'],
   future: {
     v4: true,
   },

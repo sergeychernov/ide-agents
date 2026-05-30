@@ -7,7 +7,7 @@ title: REST API
 
 Base URL: `http://127.0.0.1:<port>/api`
 
-Default port: **3921**
+Default port: **3921** (CLI uses the next free port if busy)
 
 ## Endpoints
 
@@ -17,13 +17,14 @@ Default port: **3921**
 | `GET` | `/settings` | `ides`, folder-based defaults, `home`, `version` |
 | `PUT` | `/settings` | Update `ides` (then re-apply from UI) |
 | `GET` | `/repos` | List repos with git status and skill/agent counts |
-| `POST` | `/repos` | Clone repo `{ url, ref?, id? }` |
+| `POST` | `/repos` | Clone repo `{ url, ref?, id? }`; bootstraps empty clones |
 | `DELETE` | `/repos/:id` | Remove repo from config |
+| `POST` | `/repos/:id/bootstrap` | Apply starter template to an empty repo |
 | `POST` | `/repos/:id/fetch` | `git fetch` (updates remote refs) |
 | `POST` | `/repos/:id/check-updates` | `git fetch`, then compare local to `origin` |
 | `POST` | `/repos/:id/pull` | `git pull` |
 | `GET` | `/repos/:id/artifacts` | Scan skills and agents |
-| `GET` | `/installations` | Current installations |
+| `GET` | `/installations` | `installations` and `recentProjects` |
 | `PUT` | `/installations` | Replace installations array |
 | `POST` | `/apply` | Apply symlinks for all enabled IDEs |
 
@@ -43,7 +44,7 @@ curl http://127.0.0.1:3921/api/status
 {
   "home": "/Users/me/.ide-agents",
   "port": 3921,
-  "version": "0.1.1",
+  "version": "0.3.0",
   "defaultProjectPath": "/Users/me/code/my-app",
   "ides": {
     "cursor": { "enabled": true, "configPath": "/Users/me/.cursor" },
@@ -82,6 +83,58 @@ curl -X POST http://127.0.0.1:3921/api/apply
 ```
 
 Actions: `created`, `removed`, `skipped`. Skipped may include `error` when target is not a symlink.
+
+### Clone (with bootstrap)
+
+```bash
+curl -X POST http://127.0.0.1:3921/api/repos \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://github.com/you/empty-skills.git","ref":"main"}'
+```
+
+```json
+{
+  "repo": {
+    "id": "github-com-you-empty-skills",
+    "url": "https://github.com/you/empty-skills.git",
+    "ref": "main",
+    "slug": "github-com-you-empty-skills",
+    "localPath": "/Users/me/.ide-agents/repos/github-com-you-empty-skills",
+    "skillCount": 1,
+    "agentCount": 1,
+    "git": { "branch": "main", "sha": "abc123", "dirty": false, "behind": 0, "ahead": 1 }
+  },
+  "bootstrap": {
+    "applied": true,
+    "pushed": true,
+    "skillCount": 1,
+    "agentCount": 1
+  }
+}
+```
+
+When the repo already has artifacts, `bootstrap.applied` is `false` and counts reflect the existing catalog. If push fails, `bootstrap.pushed` is `false` and `pushError` explains why.
+
+### Bootstrap empty repo
+
+```bash
+curl -X POST http://127.0.0.1:3921/api/repos/my-repo/bootstrap
+```
+
+Returns `{ repo, bootstrap }` on success. HTTP **409** if the repo is not empty (`Repository is not empty — bootstrap skipped`).
+
+### Installations
+
+```bash
+curl http://127.0.0.1:3921/api/installations
+```
+
+```json
+{
+  "installations": [],
+  "recentProjects": ["/Users/me/code/my-app"]
+}
+```
 
 ## Errors
 

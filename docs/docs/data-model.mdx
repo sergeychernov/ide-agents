@@ -64,7 +64,13 @@ On first config creation, `enabled` is set only when the matching directory alre
 | `project` | Symlink under `<project>/<tool-subfolder>/...` |
 | `projectPath` | Active installs use CLI launch cwd; when `project` is off, the previous path is kept so removal can run |
 
-Global and project are **mutually exclusive** in the UI — at most one active per artifact per tool.
+Global and project are **mutually exclusive** in the UI — at most one active scope per artifact. A single installation is applied to **all enabled IDEs** when you toggle Global or Project.
+
+### `recentProjects`
+
+| Field | Description |
+|-------|-------------|
+| `recentProjects` | Up to 10 absolute paths, most recent first. Updated when a project install is saved via `PUT /installations`. |
 
 ### Legacy migration
 

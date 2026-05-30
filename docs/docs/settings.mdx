@@ -49,6 +49,18 @@ Example with default paths and skill `tech-debt`:
 
 Skill folders use directory symlinks; agent files use file symlinks.
 
+One installation record applies to **every enabled IDE** — toggling Global or Project on a skill/agent card is per artifact, not per tool.
+
+## Project `.gitignore`
+
+When you install an artifact with **Project**, ide-agents adds the symlink path(s) to the project’s `.gitignore` under:
+
+```
+# ide-agents (managed — do not edit manually)
+```
+
+This keeps IDE config symlinks out of git without touching the rest of your ignore rules. Entries are removed when you deactivate the project install. See [Architecture](/docs/architecture#project-gitignore).
+
 ## config.json: `ides`
 
 ```json

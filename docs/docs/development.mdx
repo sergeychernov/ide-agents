@@ -20,9 +20,10 @@ npm install
 | `npm run dev` | Backend :3921 + Vite :5173 |
 | `npm run build` | Compile server + web |
 | `npm start` | Run production build |
+| `npm run docs:install` | Install Docusaurus dependencies (first time) |
 | `npm run docs:start` | Docusaurus dev server |
 | `npm run docs:build` | Build documentation site |
-| `npm run lint` | ESLint (`src/`, `web/`) |
+| `npm run lint` | ESLint (`src/`, `web/`, `template/**/*.mjs`) |
 | `npm run lint:fix` | ESLint with autofix |
 
 ## Project structure
@@ -48,7 +49,7 @@ Use any local git repo with `skills/*/SKILL.md` and/or `agents/*.md`. In the UI,
 ## CLI flags
 
 ```bash
-ide-agents --port 3922    # custom port
+ide-agents --port 3922    # preferred port (falls back to next free if busy)
 ide-agents --no-open      # do not open browser
 ```
 
