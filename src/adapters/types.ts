@@ -1,4 +1,4 @@
-import type { ArtifactKind, IdeId, Installation } from "../types.js";
+import type { IdeId, Installation } from "../types.js";
 
 export interface Adapter {
   id: IdeId;

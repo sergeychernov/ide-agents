@@ -148,6 +148,33 @@ export async function getGitStatus(slug: string, ref: string): Promise<GitStatus
   }
 }
 
+export async function commitAndPushRepo(cwd: string, ref: string): Promise<void> {
+  if (!(await isGitRepo(cwd))) {
+    throw new Error(`Not a git repository: ${cwd}`);
+  }
+
+  const status = await runGit(cwd, ["status", "--porcelain"]);
+  if (!status.stdout.trim()) {
+    return;
+  }
+
+  await runGit(cwd, ["add", "-A"]);
+  await runGit(cwd, [
+    "commit",
+    "-m",
+    "chore: bootstrap skills catalog from ide-agents template",
+  ]);
+
+  try {
+    await runGit(cwd, ["push", "origin", ref]);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`Commit succeeded but push failed: ${message}`, {
+      cause: err,
+    });
+  }
+}
+
 export async function getGitStatusWithoutFetch(
   slug: string,
   ref: string,

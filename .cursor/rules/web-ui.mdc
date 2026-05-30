@@ -19,6 +19,11 @@ web/src/
 └── api/client.ts   # fetch wrapper; JSON Content-Type only when body present
 ```
 
+## Copy language
+
+- All user-facing UI strings in `web/` (labels, titles, placeholders, alerts, empty states) must be **simple English** only.
+- Do not translate the interface to Russian or any other language unless the user explicitly asks for i18n/l10n work.
+
 ## UX rules
 
 - **Global** / **Project** icons are mutually exclusive; click applies immediately (no Save button).

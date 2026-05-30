@@ -8,6 +8,7 @@
   },
   "files": [
     "dist",
+    "template",
     "web/dist",
     "LICENSE",
     "README.md"
@@ -23,7 +24,9 @@
     "start": "node dist/cli.js",
     "docs:install": "npm install --prefix docs",
     "docs:start": "npm --prefix docs start",
-    "docs:build": "npm --prefix docs run build"
+    "docs:build": "npm --prefix docs run build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "engines": {
     "node": ">=20"
@@ -56,6 +59,7 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@mantine/core": "^9.2.2",
     "@mantine/hooks": "^9.2.2",
     "@tabler/icons-react": "^3.44.0",
@@ -64,6 +68,9 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
     "concurrently": "^9.1.2",
+    "eslint": "^10.4.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^16.5.0",
     "postcss": "^8.5.15",
     "postcss-preset-mantine": "^1.18.0",
     "postcss-simple-vars": "^7.0.1",
@@ -72,6 +79,7 @@
     "react-router-dom": "^7.3.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
+    "typescript-eslint": "^8.60.0",
     "vite": "^8.0.14"
   }
 }

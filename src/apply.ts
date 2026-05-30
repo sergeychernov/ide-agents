@@ -7,12 +7,7 @@ import {
   toGitignorePath,
 } from "./gitignore.js";
 import { getRepoPath, resolveProjectPath } from "./paths.js";
-import type {
-  IdeAgentsConfig,
-  ApplyResult,
-  ApplyResultItem,
-  Installation,
-} from "./types.js";
+import type { IdeAgentsConfig, ApplyResult, ApplyResultItem } from "./types.js";
 
 async function pathExists(filePath: string): Promise<boolean> {
   try {

@@ -22,6 +22,14 @@ export interface GitStatus {
   error?: string;
 }
 
+export interface RepoBootstrap {
+  applied: boolean;
+  pushed: boolean;
+  pushError?: string;
+  skillCount: number;
+  agentCount: number;
+}
+
 export interface Repo {
   id: string;
   url: string;
@@ -121,13 +129,19 @@ export const api = {
   repos: () => request<{ repos: Repo[] }>("/api/repos"),
 
   addRepo: (url: string, ref: string, id?: string) =>
-    request<{ repo: Repo }>("/api/repos", {
+    request<{ repo: Repo; bootstrap?: RepoBootstrap }>("/api/repos", {
       method: "POST",
       body: JSON.stringify({ url, ref, ...(id ? { id } : {}) }),
     }),
 
   deleteRepo: (id: string) =>
     request<{ ok: boolean }>(`/api/repos/${id}`, { method: "DELETE" }),
+
+  bootstrapRepo: (id: string) =>
+    request<{ repo: Repo; bootstrap: RepoBootstrap }>(
+      `/api/repos/${id}/bootstrap`,
+      { method: "POST" },
+    ),
 
   fetchRepo: (id: string) =>
     request<{ git: GitStatus }>(`/api/repos/${id}/fetch`, { method: "POST" }),

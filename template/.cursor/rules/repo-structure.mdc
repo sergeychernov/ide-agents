@@ -1,0 +1,46 @@
+---
+description: Skills and agents repository layout for ide-agents catalogs
+alwaysApply: true
+---
+
+# Repository structure
+
+This repository is an **ide-agents skill catalog** — not an application codebase.
+
+## Directories
+
+| Path | Purpose |
+|------|---------|
+| `skills/<id>/SKILL.md` | Installable skills (required `SKILL.md` per folder) |
+| `skills/<id>/scripts/` | Optional bundled generators (`*.mjs`) — see `scripts.mdc` |
+| `skills/<id>/assets/` | Optional JSON/markers read by scripts |
+| `skills/_shared/` | Optional cross-skill helpers (imported by scripts) |
+| `agents/<id>.md` | Subagent orchestrators — call scripts, do not re-implement generators |
+| `.cursor/rules/` | Cursor project rules (this file) |
+
+## SKILL.md conventions
+
+- YAML frontmatter: `name`, `description`, `scope` (`global`, `project`, or `any`).
+- Body: instructions the IDE agent follows when the skill is invoked.
+- One skill per directory under `skills/`.
+
+## Agents
+
+- One markdown file per agent in `agents/` (e.g. `agents/oracle.md`).
+- YAML frontmatter: `name`, `description`, optional `scope` (`global`, `project`, or `any`).
+- `name` must match the filename stem; used by Cursor/Claude/Codex as the subagent id.
+- Agents **orchestrate**; deterministic generators live in `skills/<id>/scripts/` (see `agents.mdc`).
+
+## Scripts (generators)
+
+Stable scanners and report writers belong in `skills/<skill-id>/scripts/`, not inline in agent prompts. Follow `scripts.mdc` (ESM `.mjs`, stdlib only, `--json` / `--dry-run`, resolve paths via `import.meta.url`).
+
+## Do not
+
+- Put application source code here unless it supports the catalog itself.
+- Rename skill folders casually — `artifactId` in ide-agents matches the directory name.
+- Remove `SKILL.md` from a skill folder (scan ignores directories without it).
+
+## Installing
+
+Use [ide-agents](https://github.com/sergeychernov/ide-agents): add this repo, then toggle **Global** or **Project** on Skills / Agents pages.

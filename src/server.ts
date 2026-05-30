@@ -1,6 +1,5 @@
 import Fastify from "fastify";
 import fastifyStatic from "@fastify/static";
-import path from "node:path";
 import { v4 as uuidv4 } from "uuid";
 import {
   addRecentProject,
@@ -13,6 +12,7 @@ import {
   getGitStatusWithoutFetch,
   pullRepo,
 } from "./git.js";
+import { bootstrapEmptyRepo } from "./template.js";
 import { applyInstallations } from "./apply.js";
 import { scanRepoArtifacts } from "./scan.js";
 import { getArtifactTargets } from "./targets.js";
@@ -23,12 +23,7 @@ import {
   getWebDistDir,
   slugFromUrl,
 } from "./paths.js";
-import type {
-  IdeAgentsConfig,
-  IdesConfig,
-  Installation,
-  RepoWithStatus,
-} from "./types.js";
+import type { IdesConfig, Installation, RepoWithStatus } from "./types.js";
 import { defaultAdapterFromIdes, getDefaultIdes } from "./ides.js";
 import { PACKAGE_VERSION as VERSION } from "./version.js";
 
@@ -147,13 +142,16 @@ export async function createServer(options: ServerOptions) {
         return reply.status(409).send({ error: `Repository id already exists: ${repoId}` });
       }
 
+      let repoPath: string;
       try {
-        await cloneRepo(url.trim(), slug, ref);
+        repoPath = await cloneRepo(url.trim(), slug, ref);
       } catch (err) {
         return reply.status(400).send({
           error: err instanceof Error ? err.message : String(err),
         });
       }
+
+      const bootstrap = await bootstrapEmptyRepo(repoPath, ref);
 
       const repo = { id: repoId, url: url.trim(), ref, slug };
       config.repos.push(repo);
@@ -165,7 +163,10 @@ export async function createServer(options: ServerOptions) {
           ...repo,
           localPath: getRepoPath(slug),
           git,
+          skillCount: bootstrap.skillCount,
+          agentCount: bootstrap.agentCount,
         },
+        bootstrap,
       };
     },
   );
@@ -185,6 +186,43 @@ export async function createServer(options: ServerOptions) {
       );
       await writeConfig(config);
       return { ok: true };
+    },
+  );
+
+  app.post<{ Params: { id: string } }>(
+    "/api/repos/:id/bootstrap",
+    async (request, reply) => {
+      const config = await readConfig();
+      const repo = config.repos.find((r) => r.id === request.params.id);
+      if (!repo) {
+        return reply.status(404).send({ error: "Repository not found" });
+      }
+
+      const repoPath = getRepoPath(repo.slug);
+      try {
+        const bootstrap = await bootstrapEmptyRepo(repoPath, repo.ref);
+        if (!bootstrap.applied) {
+          return reply.status(409).send({
+            error: "Repository is not empty — bootstrap skipped",
+          });
+        }
+
+        const git = await getGitStatusWithoutFetch(repo.slug, repo.ref);
+        return {
+          repo: {
+            ...repo,
+            localPath: repoPath,
+            git,
+            skillCount: bootstrap.skillCount,
+            agentCount: bootstrap.agentCount,
+          },
+          bootstrap,
+        };
+      } catch (err) {
+        return reply.status(400).send({
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
     },
   );
 

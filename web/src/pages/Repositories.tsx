@@ -1,18 +1,15 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
-  Badge,
-  Button,
   Code,
-  Group,
-  Paper,
   SimpleGrid,
   Stack,
   Text,
-  TextInput,
   Title,
 } from "@mantine/core";
-import { api, type GitStatus, type Repo } from "../api/client";
+import { api, type GitStatus, type Repo, type RepoBootstrap } from "../api/client";
+import AddRepositoryCard from "../components/AddRepositoryCard";
+import InstalledRepoCard from "../components/InstalledRepoCard";
 import SuggestedRepoCard from "../components/SuggestedRepoCard";
 import {
   KNOWN_SKILL_REPOS,
@@ -28,14 +25,26 @@ function formatBehind(git: GitStatus): string {
   return `${git.behind} commit(s) behind remote`;
 }
 
-function repoStatus(repo: Repo): string {
-  const parts = [repo.git.dirty ? "Dirty working tree" : "Clean"];
-  if (repo.git.behind !== null && repo.git.behind > 0) {
-    parts.push(`${repo.git.behind} behind`);
-  } else if (repo.git.behind === 0) {
-    parts.push("up to date");
+function formatAddRepoMessage(
+  label: string,
+  bootstrap?: RepoBootstrap,
+): string {
+  if (!bootstrap?.applied) {
+    return `Cloned ${label}`;
   }
-  return parts.join(" · ");
+
+  const parts = [
+    `Cloned ${label} and filled it with the starter template`,
+    `(${bootstrap.skillCount} skills, ${bootstrap.agentCount} agents)`,
+  ];
+
+  if (bootstrap.pushed) {
+    parts.push("— pushed to remote");
+  } else if (bootstrap.pushError) {
+    parts.push(`— push failed: ${bootstrap.pushError}`);
+  }
+
+  return parts.join(" ");
 }
 
 interface RepositoriesProps {
@@ -44,7 +53,7 @@ interface RepositoriesProps {
 
 export default function Repositories({ onReposChange }: RepositoriesProps) {
   const [repos, setRepos] = useState<Repo[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [url, setUrl] = useState("");
   const [ref, setRef] = useState("main");
   const [loading, setLoading] = useState(false);
@@ -54,11 +63,8 @@ export default function Repositories({ onReposChange }: RepositoriesProps) {
   const loadRepos = useCallback(async () => {
     const data = await api.repos();
     setRepos(data.repos);
-    if (data.repos.length > 0 && !selectedId) {
-      setSelectedId(data.repos[0]!.id);
-    }
     onReposChange?.();
-  }, [selectedId, onReposChange]);
+  }, [onReposChange]);
 
   useEffect(() => {
     loadRepos().catch((err) =>
@@ -66,7 +72,11 @@ export default function Repositories({ onReposChange }: RepositoriesProps) {
     );
   }, [loadRepos]);
 
-  const selected = repos.find((r) => r.id === selectedId) ?? null;
+  const expandedRepo = repos.find((r) => r.id === expandedId) ?? null;
+
+  function toggleExpanded(repoId: string) {
+    setExpandedId((current) => (current === repoId ? null : repoId));
+  }
 
   const installedUrls = useMemo(() => repos.map((r) => r.url), [repos]);
 
@@ -89,11 +99,11 @@ export default function Repositories({ onReposChange }: RepositoriesProps) {
     setError(null);
     setMessage(null);
     try {
-      const { repo } = await api.addRepo(url.trim(), ref.trim() || "main");
+      const { repo, bootstrap } = await api.addRepo(url.trim(), ref.trim() || "main");
       setRepos((prev) => [...prev, repo]);
-      setSelectedId(repo.id);
+      setExpandedId(repo.id);
       setUrl("");
-      setMessage(`Cloned ${repo.url}`);
+      setMessage(formatAddRepoMessage(repo.url, bootstrap));
       onReposChange?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -141,10 +151,28 @@ export default function Repositories({ onReposChange }: RepositoriesProps) {
     setError(null);
     setMessage(null);
     try {
-      const { repo } = await api.addRepo(known.url, known.ref, known.id);
+      const { repo, bootstrap } = await api.addRepo(known.url, known.ref, known.id);
       setRepos((prev) => [...prev, repo]);
-      setSelectedId(repo.id);
-      setMessage(`Cloned ${known.name}`);
+      setExpandedId(repo.id);
+      setMessage(formatAddRepoMessage(known.name, bootstrap));
+      onReposChange?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleBootstrap(repoId: string) {
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const { repo, bootstrap } = await api.bootstrapRepo(repoId);
+      setRepos((prev) =>
+        prev.map((r) => (r.id === repoId ? { ...r, ...repo } : r)),
+      );
+      setMessage(formatAddRepoMessage(repo.url, bootstrap));
       onReposChange?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -160,8 +188,8 @@ export default function Repositories({ onReposChange }: RepositoriesProps) {
     try {
       await api.deleteRepo(repoId);
       setRepos((prev) => prev.filter((r) => r.id !== repoId));
-      if (selectedId === repoId) {
-        setSelectedId(null);
+      if (expandedId === repoId) {
+        setExpandedId(null);
       }
       onReposChange?.();
     } catch (err) {
@@ -173,34 +201,49 @@ export default function Repositories({ onReposChange }: RepositoriesProps) {
 
   return (
     <Stack gap="lg">
-      <Title order={2}>Repositories</Title>
+      <Stack gap="md">
+        <Title order={2}>Connect repositories</Title>
+        <Text size="sm" c="dimmed">
+          Start with public catalogs that include <Code>SKILL.md</Code> — one click to
+          clone. For corporate, personal, or lesser-known sources, add a URL below.
+          Empty repositories are filled automatically with sample skills, agents, and
+          IDE rules.
+        </Text>
 
-      <Paper withBorder p="md" radius="md">
-        <Stack gap="md">
-          <Title order={4}>Add repository</Title>
-          <form onSubmit={handleAdd}>
-            <Stack gap="md">
-              <TextInput
-                label="Git URL"
-                placeholder="https://github.com/org/skills.git or file:///path/to/repo"
-                value={url}
-                onChange={(e) => setUrl(e.currentTarget.value)}
-                required
+        {suggestedToAdd.length > 0 && (
+          <Stack gap="md">
+            {primarySuggested && (
+              <SuggestedRepoCard
+                repo={primarySuggested}
+                primary
+                loading={loading}
+                onAdd={() => handleAddKnown(primarySuggested)}
               />
-              <TextInput
-                label="Ref (branch/tag)"
-                value={ref}
-                onChange={(e) => setRef(e.currentTarget.value)}
-              />
-              <Group>
-                <Button type="submit" loading={loading}>
-                  Add / Clone
-                </Button>
-              </Group>
-            </Stack>
-          </form>
-        </Stack>
-      </Paper>
+            )}
+            {otherSuggested.length > 0 && (
+              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                {otherSuggested.map((known) => (
+                  <SuggestedRepoCard
+                    key={known.id}
+                    repo={known}
+                    loading={loading}
+                    onAdd={() => handleAddKnown(known)}
+                  />
+                ))}
+              </SimpleGrid>
+            )}
+          </Stack>
+        )}
+
+        <AddRepositoryCard
+          url={url}
+          ref={ref}
+          loading={loading}
+          onUrlChange={setUrl}
+          onRefChange={setRef}
+          onSubmit={handleAdd}
+        />
+      </Stack>
 
       {error && (
         <Alert color="red" title="Error" variant="light">
@@ -213,155 +256,33 @@ export default function Repositories({ onReposChange }: RepositoriesProps) {
         </Alert>
       )}
 
-      {suggestedToAdd.length > 0 && (
-        <Stack gap="md">
-          <Title order={4}>Suggested skill repositories</Title>
-          <Text size="sm" c="dimmed">
-            Public catalogs with <Code>SKILL.md</Code> — one click to clone.
-          </Text>
-          {primarySuggested && (
-            <SuggestedRepoCard
-              repo={primarySuggested}
-              primary
-              loading={loading}
-              onAdd={() => handleAddKnown(primarySuggested)}
-            />
-          )}
-          {otherSuggested.length > 0 && (
-            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-              {otherSuggested.map((known) => (
-                <SuggestedRepoCard
-                  key={known.id}
-                  repo={known}
-                  loading={loading}
-                  onAdd={() => handleAddKnown(known)}
-                />
-              ))}
-            </SimpleGrid>
-          )}
-        </Stack>
-      )}
-
       <Stack gap="md">
         <Title order={4}>Your repositories</Title>
         {repos.length === 0 ? (
           <Text c="dimmed">
-            No repositories yet. Pick a suggested catalog above or add a custom URL.
+            No repositories yet. Pick a catalog above or add a custom URL.
           </Text>
         ) : (
-          repos.map((repo) => {
-            const isSelected = selectedId === repo.id;
-            return (
-              <Paper
-                key={repo.id}
-                withBorder
-                p="md"
-                radius="md"
-                style={{
-                  cursor: "pointer",
-                  borderColor: isSelected
-                    ? "var(--mantine-color-blue-outline)"
-                    : undefined,
-                  background: isSelected
-                    ? "var(--mantine-color-blue-light)"
-                    : undefined,
-                }}
-                onClick={() => setSelectedId(repo.id)}
-              >
-                <Stack gap="sm">
-                  <Group justify="space-between" align="flex-start" wrap="wrap">
-                    <Stack gap={2}>
-                      <Text fw={600}>{repo.id}</Text>
-                      <Text size="sm" c="dimmed" style={{ wordBreak: "break-all" }}>
-                        {repo.url}
-                      </Text>
-                    </Stack>
-                    {isSelected && <Badge color="blue">Selected</Badge>}
-                  </Group>
-
-                  <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xs">
-                    <Text size="sm">
-                      <Text span c="dimmed">
-                        Contents:{" "}
-                      </Text>
-                      {repo.skillCount} skill{repo.skillCount === 1 ? "" : "s"}
-                      {repo.agentCount > 0
-                        ? ` · ${repo.agentCount} agent${repo.agentCount === 1 ? "" : "s"}`
-                        : ""}
-                    </Text>
-                    <Text size="sm">
-                      <Text span c="dimmed">
-                        Local path:{" "}
-                      </Text>
-                      <Code block mt={4}>
-                        {repo.localPath}
-                      </Code>
-                    </Text>
-                    <Text size="sm">
-                      <Text span c="dimmed">
-                        Branch:{" "}
-                      </Text>
-                      {repo.git.branch ?? "—"}
-                    </Text>
-                    <Text size="sm">
-                      <Text span c="dimmed">
-                        Commit:{" "}
-                      </Text>
-                      <Code>{repo.git.sha?.slice(0, 8) ?? "—"}</Code>
-                    </Text>
-                    <Text size="sm">
-                      <Text span c="dimmed">
-                        Status:{" "}
-                      </Text>
-                      {repoStatus(repo)}
-                    </Text>
-                  </SimpleGrid>
-
-                  {isSelected && (
-                    <Group
-                      gap="xs"
-                      mt="xs"
-                      onClick={(e) => e.stopPropagation()}
-                      wrap="wrap"
-                    >
-                      <Button
-                        variant="light"
-                        size="sm"
-                        disabled={loading}
-                        onClick={() => handlePull(repo.id)}
-                      >
-                        Pull
-                      </Button>
-                      <Button
-                        variant="light"
-                        size="sm"
-                        disabled={loading}
-                        onClick={() => handleCheckUpdates(repo.id)}
-                      >
-                        Check for updates
-                      </Button>
-                      <Button
-                        variant="light"
-                        color="red"
-                        size="sm"
-                        disabled={loading}
-                        onClick={() => handleDelete(repo.id)}
-                      >
-                        Remove
-                      </Button>
-                    </Group>
-                  )}
-                </Stack>
-              </Paper>
-            );
-          })
+          repos.map((repo) => (
+            <InstalledRepoCard
+              key={repo.id}
+              repo={repo}
+              expanded={expandedId === repo.id}
+              loading={loading}
+              onToggle={() => toggleExpanded(repo.id)}
+              onPull={() => handlePull(repo.id)}
+              onCheckUpdates={() => handleCheckUpdates(repo.id)}
+              onBootstrap={() => handleBootstrap(repo.id)}
+              onDelete={() => handleDelete(repo.id)}
+            />
+          ))
         )}
       </Stack>
 
-      {selected && (
+      {expandedRepo && (
         <Text size="sm" c="dimmed">
-          Selected: <Text span fw={600}>{selected.id}</Text>. Use Skills or Agents
-          to install from this repo.
+          Selected: <Text span fw={600}>{expandedRepo.id}</Text>. Use Skills or
+          Agents to install from this repo.
         </Text>
       )}
     </Stack>

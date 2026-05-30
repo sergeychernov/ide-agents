@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { ArtifactKind, IdeId, Installation } from "../types.js";
+import type { ArtifactKind, IdeId } from "../types.js";
 import { expandUserPath, resolveProjectPath } from "../paths.js";
 import type { Adapter } from "./types.js";
 

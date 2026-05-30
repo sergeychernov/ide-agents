@@ -133,7 +133,6 @@ export default function ArtifactListPage({
     loadArtifacts(repoId, installations, defaultProjectPath).catch((err) =>
       setError(err instanceof Error ? err.message : String(err)),
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload on repo/installations/default path, not row edits
   }, [repoId, installations, defaultProjectPath, sessionReady, loadArtifacts]);
 
   const persistAndApply = useCallback(

@@ -75,7 +75,7 @@ export default function Settings() {
     void persist(next);
   }
 
-  function savePath(id: IdeId) {
+  function savePath() {
     if (!ides) return;
     void persist(ides);
   }
@@ -130,7 +130,7 @@ export default function Settings() {
                       : prev,
                   )
                 }
-                onBlur={() => savePath(id)}
+                onBlur={() => savePath()}
               />
             </Stack>
           ))}
