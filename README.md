@@ -121,13 +121,7 @@ npm run docs:install
 npm run docs:start # http://localhost:3000
 ```
 
-Fixture repo for manual testing:
-
-```bash
-cd fixtures/sample-repo && git init && git add . && git commit -m "init"
-```
-
-Then add `file://$(pwd)` in the UI.
+For local testing, add a `file://` URL to any git repo with skills/agents (see [docs](https://ide-agents.vercel.app/docs/source-repos#local-testing)).
 
 ## Data layout
 

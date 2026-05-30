@@ -13,8 +13,7 @@ Local CLI + HTTP server + React UI for managing **IDE agents and skills** from g
 ide-agents/          # npm package name; repo folder may differ
 ├── src/             # Node backend + CLI (tsc → dist/)
 ├── web/             # Vite + React + Mantine UI (→ web/dist/)
-├── docs/            # Docusaurus site (separate package)
-└── fixtures/        # sample git repo for manual testing
+└── docs/            # Docusaurus site (separate package)
 ```
 
 ## Runtime flow
