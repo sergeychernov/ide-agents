@@ -13,6 +13,13 @@ export interface IdesConfig {
   codex: IdeToolConfig;
 }
 
+export interface NpmUpdateInfo {
+  current: string;
+  latest: string | null;
+  updateAvailable: boolean;
+  installCommand: string;
+}
+
 export interface GitStatus {
   branch: string | null;
   sha: string | null;
@@ -108,6 +115,7 @@ export const api = {
       home: string;
       port: number;
       version: string;
+      npmUpdate: NpmUpdateInfo;
       defaultProjectPath: string | null;
       ides: IdesConfig;
     }>("/api/status"),
@@ -118,6 +126,7 @@ export const api = {
       defaults: IdesConfig;
       home: string;
       version: string;
+      npmUpdate: NpmUpdateInfo;
     }>("/api/settings"),
 
   saveSettings: (ides: IdesConfig) =>

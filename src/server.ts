@@ -25,6 +25,7 @@ import {
 } from "./paths.js";
 import type { IdesConfig, Installation, RepoWithStatus } from "./types.js";
 import { defaultAdapterFromIdes, getDefaultIdes } from "./ides.js";
+import { checkNpmUpdate } from "./npmUpdate.js";
 import { PACKAGE_VERSION as VERSION } from "./version.js";
 
 export interface ServerOptions {
@@ -44,10 +45,12 @@ export async function createServer(options: ServerOptions) {
 
   app.get("/api/status", async () => {
     const config = await readConfig();
+    const npmUpdate = await checkNpmUpdate();
     return {
       home: getIdeAgentsHome(),
       port: options.port,
       version: VERSION,
+      npmUpdate,
       defaultProjectPath: options.launchCwd ?? null,
       ides: config.ides,
     };
@@ -55,11 +58,13 @@ export async function createServer(options: ServerOptions) {
 
   app.get("/api/settings", async () => {
     const config = await readConfig();
+    const npmUpdate = await checkNpmUpdate();
     return {
       ides: config.ides,
       defaults: getDefaultIdes(),
       home: getIdeAgentsHome(),
       version: VERSION,
+      npmUpdate,
     };
   });
 

@@ -1,15 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  ActionIcon,
   Alert,
   Checkbox,
   Code,
+  CopyButton,
+  Group,
   Paper,
   Stack,
   Text,
   TextInput,
   Title,
+  Tooltip,
 } from "@mantine/core";
-import { api, type IdeId, type IdesConfig } from "../api/client";
+import { IconCheck, IconCopy } from "@tabler/icons-react";
+import { api, type IdeId, type IdesConfig, type NpmUpdateInfo } from "../api/client";
 import { toDisplayPath } from "../pathDisplay";
 
 const IDE_ROWS: { id: IdeId; label: string }[] = [
@@ -22,6 +27,7 @@ export default function Settings() {
   const [ides, setIdes] = useState<IdesConfig | null>(null);
   const [home, setHome] = useState("");
   const [version, setVersion] = useState("");
+  const [npmUpdate, setNpmUpdate] = useState<NpmUpdateInfo | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -31,6 +37,7 @@ export default function Settings() {
     setIdes(data.ides);
     setHome(data.home);
     setVersion(data.version);
+    setNpmUpdate(data.npmUpdate);
   }, []);
 
   useEffect(() => {
@@ -94,6 +101,33 @@ export default function Settings() {
           Data directory: <Code>{home}</Code> · v{version}
         </Text>
       </Stack>
+
+      {npmUpdate?.updateAvailable && npmUpdate.latest && (
+        <Alert color="blue" title="Доступно обновление" variant="light">
+          <Stack gap="xs">
+            <Text size="sm">
+              Установлена v{npmUpdate.current}, в npm — v{npmUpdate.latest}.
+            </Text>
+            <Group gap="xs" wrap="nowrap">
+              <Code flex={1}>{npmUpdate.installCommand}</Code>
+              <CopyButton value={npmUpdate.installCommand} timeout={2000}>
+                {({ copied, copy }) => (
+                  <Tooltip label={copied ? "Скопировано" : "Копировать"} withArrow>
+                    <ActionIcon
+                      color={copied ? "teal" : "gray"}
+                      variant="subtle"
+                      onClick={copy}
+                      aria-label="Копировать команду обновления"
+                    >
+                      {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+              </CopyButton>
+            </Group>
+          </Stack>
+        </Alert>
+      )}
 
       <Paper withBorder p="md" radius="md">
         <Stack gap="lg">

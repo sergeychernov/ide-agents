@@ -3,11 +3,13 @@ import { spawn } from "node:child_process";
 import net from "node:net";
 import path from "node:path";
 import { readConfig } from "./config.js";
+import { checkNpmUpdate, formatCliUpdateMessage } from "./npmUpdate.js";
 import { startServer } from "./server.js";
 
 interface CliOptions {
   port?: number;
   noOpen?: boolean;
+  noUpdateCheck?: boolean;
 }
 
 function parseArgs(argv: string[]): CliOptions {
@@ -17,6 +19,8 @@ function parseArgs(argv: string[]): CliOptions {
     const arg = argv[i];
     if (arg === "--no-open") {
       options.noOpen = true;
+    } else if (arg === "--no-update-check") {
+      options.noUpdateCheck = true;
     } else if (arg === "--port" && argv[i + 1]) {
       options.port = Number.parseInt(argv[i + 1]!, 10);
       i++;
@@ -73,6 +77,13 @@ async function main(): Promise<void> {
   const requestedPort = options.port ?? config.server.port;
   const port = await findAvailablePort(requestedPort, host);
   const url = `http://${host}:${port}`;
+
+  if (!options.noUpdateCheck) {
+    const updateMessage = formatCliUpdateMessage(await checkNpmUpdate());
+    if (updateMessage) {
+      console.log(updateMessage);
+    }
+  }
 
   const app = await startServer({
     port,
