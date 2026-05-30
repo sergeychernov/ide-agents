@@ -219,6 +219,14 @@ export async function createServer(options: ServerOptions) {
         return reply.status(404).send({ error: "Repository not found" });
       }
 
+      try {
+        await fetchRepo(repo.slug);
+      } catch (err) {
+        return reply.status(400).send({
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+
       const git = await getGitStatusWithoutFetch(repo.slug, repo.ref);
       return { git };
     },
