@@ -27,6 +27,20 @@ async function runGit(
   return { stdout: result.stdout.trim(), stderr: result.stderr.trim() };
 }
 
+async function syncExistingRepo(target: string, ref: string): Promise<void> {
+  try {
+    await runGit(target, ["fetch", "--all", "--prune"]);
+    try {
+      await runGit(target, ["checkout", ref]);
+    } catch {
+      // ref may be a tag or detached state — pull current branch below
+    }
+    await runGit(target, ["pull", "--ff-only"]);
+  } catch {
+    // Best effort: re-attaching a previously removed repo still succeeds
+  }
+}
+
 export async function cloneRepo(
   url: string,
   slug: string,
@@ -34,7 +48,8 @@ export async function cloneRepo(
 ): Promise<string> {
   const target = getRepoPath(slug);
   if (await isGitRepo(target)) {
-    throw new Error(`Repository already cloned at ${target}`);
+    await syncExistingRepo(target, ref);
+    return target;
   }
 
   await execFileAsync("git", ["clone", "--branch", ref, url, target], {

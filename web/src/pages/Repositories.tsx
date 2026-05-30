@@ -13,9 +13,11 @@ import {
   Title,
 } from "@mantine/core";
 import { api, type GitStatus, type Repo } from "../api/client";
+import SuggestedRepoCard from "../components/SuggestedRepoCard";
 import {
   KNOWN_SKILL_REPOS,
   isKnownRepoInstalled,
+  isPrimaryKnownRepo,
   type KnownSkillRepo,
 } from "../knownRepos";
 
@@ -74,6 +76,11 @@ export default function Repositories({ onReposChange }: RepositoriesProps) {
         (known) => !isKnownRepoInstalled(known, installedUrls),
       ),
     [installedUrls],
+  );
+
+  const primarySuggested = suggestedToAdd.find(isPrimaryKnownRepo);
+  const otherSuggested = suggestedToAdd.filter(
+    (known) => !isPrimaryKnownRepo(known),
   );
 
   async function handleAdd(e: FormEvent) {
@@ -212,29 +219,26 @@ export default function Repositories({ onReposChange }: RepositoriesProps) {
           <Text size="sm" c="dimmed">
             Public catalogs with <Code>SKILL.md</Code> — one click to clone.
           </Text>
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-            {suggestedToAdd.map((known) => (
-              <Paper key={known.id} withBorder p="md" radius="md">
-                <Stack gap="sm">
-                  <Text fw={600}>{known.name}</Text>
-                  <Text size="sm" c="dimmed">
-                    {known.description}
-                  </Text>
-                  <Text size="xs" c="dimmed" style={{ wordBreak: "break-all" }}>
-                    {known.url}
-                  </Text>
-                  <Button
-                    variant="light"
-                    size="sm"
-                    disabled={loading}
-                    onClick={() => handleAddKnown(known)}
-                  >
-                    Add / Clone
-                  </Button>
-                </Stack>
-              </Paper>
-            ))}
-          </SimpleGrid>
+          {primarySuggested && (
+            <SuggestedRepoCard
+              repo={primarySuggested}
+              primary
+              loading={loading}
+              onAdd={() => handleAddKnown(primarySuggested)}
+            />
+          )}
+          {otherSuggested.length > 0 && (
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+              {otherSuggested.map((known) => (
+                <SuggestedRepoCard
+                  key={known.id}
+                  repo={known}
+                  loading={loading}
+                  onAdd={() => handleAddKnown(known)}
+                />
+              ))}
+            </SimpleGrid>
+          )}
         </Stack>
       )}
 

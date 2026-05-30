@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-30T07:53:23.123Z",
+  "repo": {
+    "name": "ide-agents",
+    "root": "/Users/cernovsergej/code/ide-agents",
+    "primaryLanguage": "typescript",
+    "monorepo": true,
+    "packageJsonCount": 2
+  },
+  "languages": {
+    "typescript": 33,
+    "javascript": 1
+  },
+  "stack": {
+    "runtime": {
+      "node": "20"
+    },
+    "packageManager": {
+      "name": "npm"
+    },
+    "frameworks": [
+      "fastify",
+      "react"
+    ],
+    "bundlers": [
+      "vite"
+    ]
+  },
+  "audit": {
+    "scope": "full",
+    "exclude": [
+      "node_modules/",
+      "dist/",
+      "build/",
+      ".git/"
+    ]
+  }
+}

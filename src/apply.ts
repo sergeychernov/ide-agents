@@ -1,7 +1,12 @@
 import { lstat, mkdir, readlink, symlink, unlink } from "node:fs/promises";
 import path from "node:path";
 import { getEnabledAdapters } from "./adapters/index.js";
-import { getRepoPath } from "./paths.js";
+import {
+  addManagedGitignoreEntry,
+  removeManagedGitignoreEntry,
+  toGitignorePath,
+} from "./gitignore.js";
+import { getRepoPath, resolveProjectPath } from "./paths.js";
 import type {
   IdeAgentsConfig,
   ApplyResult,
@@ -69,17 +74,43 @@ async function createSymlink(
   return { path: targetPath, action: "created" };
 }
 
+async function syncProjectGitignore(
+  projectRoot: string | null,
+  targetPath: string,
+  mode: "add" | "remove",
+): Promise<void> {
+  if (!projectRoot) {
+    return;
+  }
+
+  const entry = toGitignorePath(projectRoot, targetPath);
+  if (!entry) {
+    return;
+  }
+
+  if (mode === "add") {
+    await addManagedGitignoreEntry(projectRoot, entry);
+    return;
+  }
+
+  await removeManagedGitignoreEntry(projectRoot, entry);
+}
+
 async function applyScope(
-  installation: Installation,
   sourcePath: string,
   type: "dir" | "file",
   enabled: boolean,
   targetPath: string,
+  projectRoot: string | null,
 ): Promise<ApplyResultItem[]> {
   const results: ApplyResultItem[] = [];
   if (enabled) {
     try {
-      results.push(await createSymlink(targetPath, sourcePath, type));
+      const result = await createSymlink(targetPath, sourcePath, type);
+      results.push(result);
+      if (!result.error) {
+        await syncProjectGitignore(projectRoot, targetPath, "add");
+      }
     } catch (err) {
       results.push({
         path: targetPath,
@@ -93,6 +124,7 @@ async function applyScope(
   const removed = await removeSymlinkIfExists(targetPath);
   if (removed.action === "removed") {
     results.push(removed);
+    await syncProjectGitignore(projectRoot, targetPath, "remove");
   }
   return results;
 }
@@ -127,24 +159,25 @@ export async function applyInstallations(
 
       results.push(
         ...(await applyScope(
-          installation,
           sourcePath,
           type,
           installation.global,
           globalTarget,
+          null,
         )),
       );
 
       // projectPath is kept in config while project is off so removal can run.
       if (installation.projectPath) {
+        const projectRoot = resolveProjectPath(installation.projectPath);
         const projectTarget = adapter.getProjectTargetPath(installation);
         results.push(
           ...(await applyScope(
-            installation,
             sourcePath,
             type,
             installation.project,
             projectTarget,
+            projectRoot,
           )),
         );
       }

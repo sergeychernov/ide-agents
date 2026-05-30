@@ -9,6 +9,14 @@ export interface KnownSkillRepo {
 /** Public catalogs compatible with ide-agents skill scanning. */
 export const KNOWN_SKILL_REPOS: KnownSkillRepo[] = [
   {
+    id: "repo-audit-skills",
+    name: "sergeychernov/repo-audit-skills",
+    url: "https://github.com/sergeychernov/repo-audit-skills.git",
+    ref: "main",
+    description:
+      "Skills for repository audits — stack detection, architecture, code smells, security, and more.",
+  },
+  {
     id: "anthropics-skills",
     name: "anthropics/skills",
     url: "https://github.com/anthropics/skills.git",
@@ -28,6 +36,10 @@ export const KNOWN_SKILL_REPOS: KnownSkillRepo[] = [
 
 export function normalizeRepoUrl(url: string): string {
   return url.trim().replace(/\.git$/i, "").replace(/\/$/, "").toLowerCase();
+}
+
+export function isPrimaryKnownRepo(known: KnownSkillRepo): boolean {
+  return known.id === KNOWN_SKILL_REPOS[0]?.id;
 }
 
 export function isKnownRepoInstalled(
