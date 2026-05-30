@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-30T10:19:05.779Z",
+  "generatedBy": "https://github.com/sergeychernov/repo-audit-skills.git",
+  "profile": {
+    "version": 4,
+    "generatedAt": "2026-05-30T10:18:31.412Z",
+    "repoName": "ide-agents"
+  },
+  "scoring": {
+    "perMajorBehind": 3,
+    "perMinorBehind": 1,
+    "deprecated": 10,
+    "offline": false
+  },
+  "score": {
+    "value": 94,
+    "grade": "A",
+    "label": "fresh",
+    "totalPenalty": 6
+  },
+  "checksRun": [
+    "cursor_rules",
+    "node_runtime",
+    "stack_tools",
+    "profile_freshness"
+  ],
+  "findings": [
+    {
+      "id": "node_outdated",
+      "checkId": "node_runtime",
+      "category": "runtime",
+      "current": "20",
+      "target": "24.x",
+      "penalty": 6,
+      "criticality": "high",
+      "message": "Node 20 is two or more majors behind current LTS (24)."
+    }
+  ],
+  "recommendations": [
+    {
+      "findingId": "node_outdated",
+      "criticality": "high",
+      "rationale": "Bump Node one major at a time toward current LTS",
+      "skill": "bump-node-major"
+    }
+  ]
+}

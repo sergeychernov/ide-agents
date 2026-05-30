@@ -1,6 +1,7 @@
 {
-  "version": 1,
-  "generatedAt": "2026-05-30T07:53:23.123Z",
+  "version": 4,
+  "generatedAt": "2026-05-30T10:18:31.412Z",
+  "generatedBy": "https://github.com/sergeychernov/repo-audit-skills.git",
   "repo": {
     "name": "ide-agents",
     "root": "/Users/cernovsergej/code/ide-agents",
@@ -9,7 +10,7 @@
     "packageJsonCount": 2
   },
   "languages": {
-    "typescript": 33,
+    "typescript": 35,
     "javascript": 1
   },
   "stack": {
@@ -19,13 +20,31 @@
     "packageManager": {
       "name": "npm"
     },
-    "frameworks": [
-      "fastify",
-      "react"
-    ],
-    "bundlers": [
-      "vite"
-    ]
+    "frameworks": {
+      "fastify": [
+        "5.8.5"
+      ],
+      "react": [
+        "19.2.6"
+      ]
+    },
+    "bundlers": {
+      "vite": [
+        "8.0.14"
+      ]
+    },
+    "uiLibraries": {
+      "mantine": [
+        "9.2.2"
+      ]
+    }
+  },
+  "agentTooling": {
+    "cursor": {
+      "signals": [
+        "rules"
+      ]
+    }
   },
   "audit": {
     "scope": "full",

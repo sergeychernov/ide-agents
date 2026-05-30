@@ -6,8 +6,3 @@ docs/build/
 docs/.docusaurus/
 *.log
 .DS_Store
-# ide-agents (managed — do not edit manually)
-.agents/skills/audit-init
-.claude/skills/audit-init
-.cursor/skills/audit-init
-
