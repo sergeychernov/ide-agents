@@ -211,6 +211,20 @@ export async function createServer(options: ServerOptions) {
   );
 
   app.post<{ Params: { id: string } }>(
+    "/api/repos/:id/check-updates",
+    async (request, reply) => {
+      const config = await readConfig();
+      const repo = config.repos.find((r) => r.id === request.params.id);
+      if (!repo) {
+        return reply.status(404).send({ error: "Repository not found" });
+      }
+
+      const git = await getGitStatusWithoutFetch(repo.slug, repo.ref);
+      return { git };
+    },
+  );
+
+  app.post<{ Params: { id: string } }>(
     "/api/repos/:id/pull",
     async (request, reply) => {
       const config = await readConfig();

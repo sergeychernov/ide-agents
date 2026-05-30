@@ -19,7 +19,8 @@ Default port: **3921**
 | `GET` | `/repos` | List repos with git status and skill/agent counts |
 | `POST` | `/repos` | Clone repo `{ url, ref?, id? }` |
 | `DELETE` | `/repos/:id` | Remove repo from config |
-| `POST` | `/repos/:id/fetch` | `git fetch` |
+| `POST` | `/repos/:id/fetch` | `git fetch` (updates remote refs) |
+| `POST` | `/repos/:id/check-updates` | Compare local to `origin` without fetch |
 | `POST` | `/repos/:id/pull` | `git pull` |
 | `GET` | `/repos/:id/artifacts` | Scan skills and agents |
 | `GET` | `/installations` | Current installations |

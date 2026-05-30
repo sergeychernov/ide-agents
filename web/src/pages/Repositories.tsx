@@ -112,6 +112,23 @@ export default function Repositories({ onReposChange }: RepositoriesProps) {
     }
   }
 
+  async function handleCheckUpdates(repoId: string) {
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const { git } = await api.checkRepoUpdates(repoId);
+      setRepos((prev) =>
+        prev.map((r) => (r.id === repoId ? { ...r, git } : r)),
+      );
+      setMessage(formatBehind(git));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handlePull(repoId: string) {
     setLoading(true);
     setError(null);
@@ -340,7 +357,7 @@ export default function Repositories({ onReposChange }: RepositoriesProps) {
                         variant="light"
                         size="sm"
                         disabled={loading}
-                        onClick={() => handleFetch(repo.id)}
+                        onClick={() => handleCheckUpdates(repo.id)}
                       >
                         Check for updates
                       </Button>

@@ -132,6 +132,11 @@ export const api = {
   fetchRepo: (id: string) =>
     request<{ git: GitStatus }>(`/api/repos/${id}/fetch`, { method: "POST" }),
 
+  checkRepoUpdates: (id: string) =>
+    request<{ git: GitStatus }>(`/api/repos/${id}/check-updates`, {
+      method: "POST",
+    }),
+
   pullRepo: (id: string) =>
     request<{ git: GitStatus }>(`/api/repos/${id}/pull`, { method: "POST" }),
 
