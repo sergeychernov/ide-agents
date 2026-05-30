@@ -17,6 +17,14 @@ export const KNOWN_SKILL_REPOS: KnownSkillRepo[] = [
       "Skills for repository audits — stack detection, architecture, code smells, security, and more.",
   },
   {
+    id: "article-writing-kit",
+    name: "sergeychernov/article-writing-kit",
+    url: "https://github.com/sergeychernov/article-writing-kit.git",
+    ref: "main",
+    description:
+      "Skills and agents for long-form article writing — Obsidian workspace setup, scaffolding, outlining, and editing.",
+  },
+  {
     id: "anthropics-skills",
     name: "anthropics/skills",
     url: "https://github.com/anthropics/skills.git",
