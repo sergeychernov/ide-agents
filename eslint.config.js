@@ -17,7 +17,7 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ["src/**/*.ts", "template/**/*.mjs"],
+    files: ["src/**/*.ts", "src/**/*.test.ts", "template/**/*.mjs", "vitest.config.ts"],
     languageOptions: {
       globals: globals.node,
       ecmaVersion: 2022,
@@ -25,7 +25,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["web/**/*.{ts,tsx}"],
+    files: ["web/**/*.{ts,tsx}", "web/**/*.test.ts"],
     plugins: {
       "react-hooks": reactHooks,
     },

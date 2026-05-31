@@ -1,4 +1,33 @@
-import type { Artifact, ArtifactAllowedScope } from "../api/client";
+import type {
+  Artifact,
+  ArtifactAllowedScope,
+  Installation,
+} from "../api/client";
+
+export function artifactRowKey(artifact: Pick<Artifact, "id" | "kind">): string {
+  return `${artifact.kind}:${artifact.id}`;
+}
+
+export function findInstallation(
+  installations: Installation[],
+  repoId: string,
+  artifact: Pick<Artifact, "id" | "kind">,
+): Installation | undefined {
+  return installations.find(
+    (i) =>
+      i.repoId === repoId &&
+      i.artifactId === artifact.id &&
+      i.kind === artifact.kind,
+  );
+}
+
+export function findArtifactRow(
+  rows: ArtifactRow[],
+  artifact: Pick<Artifact, "id" | "kind">,
+): ArtifactRow | undefined {
+  const key = artifactRowKey(artifact);
+  return rows.find((row) => artifactRowKey(row.artifact) === key);
+}
 
 export interface ArtifactRow {
   artifact: Artifact;
@@ -6,6 +35,110 @@ export interface ArtifactRow {
   project: boolean;
   projectPath: string;
   installationId: string | null;
+}
+
+export function isArtifactInstalled(row: ArtifactRow): boolean {
+  return row.global || row.project;
+}
+
+export type InstallScope = "global" | "project";
+
+export function installedAgentsUsingSkillInScope(
+  skillId: string,
+  rows: ArtifactRow[],
+  scope: InstallScope,
+  excludeAgentId?: string,
+): ArtifactRow[] {
+  return rows.filter(
+    (row) =>
+      row.artifact.kind === "agent" &&
+      row.artifact.id !== excludeAgentId &&
+      row.artifact.dependsOnSkills?.includes(skillId) &&
+      (scope === "global" ? row.global : row.project),
+  );
+}
+
+/** Dependent skills installed in this scope that no other agent uses in the same scope. */
+export function deletableDependentSkillsForAgentInScope(
+  agentRow: ArtifactRow,
+  rows: ArtifactRow[],
+  scope: InstallScope,
+): ArtifactRow[] {
+  if (agentRow.artifact.kind !== "agent") return [];
+
+  const dependsOn = agentRow.artifact.dependsOnSkills ?? [];
+  const result: ArtifactRow[] = [];
+
+  for (const skillId of dependsOn) {
+    const skillRow = rows.find(
+      (row) => row.artifact.kind === "skill" && row.artifact.id === skillId,
+    );
+    if (!skillRow) continue;
+    if (scope === "global" ? !skillRow.global : !skillRow.project) continue;
+    if (
+      installedAgentsUsingSkillInScope(
+        skillId,
+        rows,
+        scope,
+        agentRow.artifact.id,
+      ).length > 0
+    ) {
+      continue;
+    }
+    result.push(skillRow);
+  }
+
+  return result;
+}
+
+export function buildAgentScopeOffPatches(
+  agentRow: ArtifactRow,
+  scope: InstallScope,
+  agentPatch: Partial<ArtifactRow>,
+  skillIdsToRemove: string[],
+): Record<string, Partial<ArtifactRow>> {
+  const patches: Record<string, Partial<ArtifactRow>> = {
+    [artifactRowKey(agentRow.artifact)]: agentPatch,
+  };
+  const skillPatch: Partial<ArtifactRow> =
+    scope === "global" ? { global: false } : { project: false };
+  for (const skillId of skillIdsToRemove) {
+    patches[artifactRowKey({ kind: "skill", id: skillId })] = skillPatch;
+  }
+  return patches;
+}
+
+export function applyPatchesToRows(
+  rows: ArtifactRow[],
+  patchesByKey: Record<string, Partial<ArtifactRow>>,
+  defaultProjectPath: string,
+): ArtifactRow[] {
+  let next = rows.map((row) => {
+    const patch = patchesByKey[artifactRowKey(row.artifact)];
+    if (!patch) return row;
+    const updated = { ...row, ...patch };
+    if (
+      patch.projectPath !== undefined &&
+      !updated.projectPath.trim() &&
+      defaultProjectPath
+    ) {
+      updated.projectPath = defaultProjectPath;
+    }
+    return updated;
+  });
+
+  for (const [key, patch] of Object.entries(patchesByKey)) {
+    const agentId = key.startsWith("agent:") ? key.slice("agent:".length) : null;
+    if (!agentId) continue;
+    next = applyAgentInstallDependencies(
+      next,
+      agentId,
+      patch,
+      defaultProjectPath,
+    );
+  }
+
+  return next;
 }
 
 export function scopeAllowsGlobal(
@@ -23,14 +156,9 @@ export function scopeAllowsProject(
 function agentsBlockingSkill(
   skillId: string,
   rows: ArtifactRow[],
-  scope: "global" | "project",
+  scope: InstallScope,
 ): ArtifactRow[] {
-  return rows.filter(
-    (row) =>
-      row.artifact.kind === "agent" &&
-      row.artifact.dependsOnSkills?.includes(skillId) &&
-      (scope === "global" ? row.global : row.project),
-  );
+  return installedAgentsUsingSkillInScope(skillId, rows, scope);
 }
 
 export function isGlobalDisabled(
@@ -116,16 +244,20 @@ export function projectDisabledReason(
   return "Not allowed by skill scope";
 }
 
+function isAgentRow(row: ArtifactRow, agentId: string): boolean {
+  return row.artifact.kind === "agent" && row.artifact.id === agentId;
+}
+
 export function applyAgentInstallDependencies(
   rows: ArtifactRow[],
   agentId: string,
   patch: Partial<ArtifactRow>,
   defaultProjectPath: string,
 ): ArtifactRow[] {
-  const agentRow = rows.find((row) => row.artifact.id === agentId);
-  if (!agentRow || agentRow.artifact.kind !== "agent") {
+  const agentRow = rows.find((row) => isAgentRow(row, agentId));
+  if (!agentRow) {
     return rows.map((row) =>
-      row.artifact.id === agentId ? { ...row, ...patch } : row,
+      isAgentRow(row, agentId) ? { ...row, ...patch } : row,
     );
   }
 
@@ -135,12 +267,12 @@ export function applyAgentInstallDependencies(
 
   if (!enablingGlobal && !enablingProject) {
     return rows.map((row) =>
-      row.artifact.id === agentId ? { ...row, ...patch } : row,
+      isAgentRow(row, agentId) ? { ...row, ...patch } : row,
     );
   }
 
   return rows.map((row) => {
-    if (row.artifact.id === agentId) {
+    if (isAgentRow(row, agentId)) {
       return { ...row, ...patch };
     }
 

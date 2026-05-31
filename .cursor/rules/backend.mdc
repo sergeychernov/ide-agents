@@ -16,6 +16,7 @@ Base path: `/api`. Keep handlers thin — delegate to `config`, `git`, `scan`, `
 
 ## Apply safety
 
+- `PUT /installations` removes symlinks for installations dropped from the payload (renamed/removed artifacts) before saving.
 - Target exists and is **not** a symlink → skip with error, never delete/overwrite.
 - `scope: off` legacy → migrated to `global: false, project: false`; preserve `projectPath` for removal.
 - Idempotent re-apply: existing symlink to same source → `skipped`.
@@ -28,3 +29,13 @@ Use `execFile` for git commands. Support `file://` URLs. Do not store credential
 
 Skills: `skills/<name>/SKILL.md` (nested), or `<name>/SKILL.md` at repo root (flat fallback). Directories without `SKILL.md` are ignored. Frontmatter `name`, `description`, `scope` (defaults to `any` when omitted).
 Agents: `agents/*.md`, optional frontmatter `scope` (defaults to `any` when omitted), optional `skills` (YAML block list of skill ids — auto-install + removal guard in UI).
+
+## Tests (required)
+
+After any change under `src/` (`apply`, `server`, installations API, adapters, config), **run before finishing**:
+
+```bash
+npm run test:server
+```
+
+Add or update tests in `src/**/*.test.ts` when behavior changes (symlink apply/remove, `findRemovedInstallations`, installation keys). Do not merge backend install/apply changes without green tests.

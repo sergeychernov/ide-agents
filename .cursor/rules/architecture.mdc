@@ -42,9 +42,14 @@ ide-agents/          # npm package name; repo folder may differ
 
 Skill frontmatter `scope: global | project | any` controls which toggles are enabled in UI.
 
+## Tests
+
+- `npm test` — full suite; `npm run test:web` / `npm run test:server` — scoped.
+- After `web/` changes run `test:web`; after `src/` changes run `test:server` (required in scoped rules).
+
 ## Conventions
 
-- ESM, Node 20+, TypeScript strict in `src/`.
+- ESM, Node 20.19+ for dev/build from source (Vite 8), TypeScript strict in `src/`.
 - API errors: `{ error: string }`.
 - macOS/Linux only (v0.1). Single adapter: `cursor`; more IDE adapters later.
 - Do not add corp/private skills to this repo — only generic tooling.

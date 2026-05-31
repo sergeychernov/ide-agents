@@ -13,7 +13,11 @@ import {
   pullRepo,
 } from "./git.js";
 import { bootstrapEmptyRepo } from "./template.js";
-import { applyInstallations } from "./apply.js";
+import {
+  applyInstallations,
+  findRemovedInstallations,
+  removeInstallationSymlinks,
+} from "./apply.js";
 import { scanRepoArtifacts } from "./scan.js";
 import { getArtifactTargets } from "./targets.js";
 import {
@@ -335,11 +339,24 @@ export async function createServer(options: ServerOptions) {
       }
 
       const config = await readConfig();
+      const previousInstallations = config.installations;
 
-      const normalized = installations.map((installation) => ({
-        ...installation,
-        id: installation.id || uuidv4(),
-      }));
+      const usedIds = new Set<string>();
+      const normalized = installations.map((installation) => {
+        let id = installation.id?.trim() || "";
+        if (!id || usedIds.has(id)) {
+          id = uuidv4();
+        }
+        usedIds.add(id);
+        return { ...installation, id };
+      });
+
+      for (const removed of findRemovedInstallations(
+        previousInstallations,
+        normalized,
+      )) {
+        await removeInstallationSymlinks(removed, config);
+      }
 
       for (const installation of normalized) {
         if (installation.project && installation.projectPath) {

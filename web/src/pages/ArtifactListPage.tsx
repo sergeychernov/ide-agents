@@ -7,11 +7,17 @@ import {
   type Installation,
   type Repo,
 } from "../api/client";
+import AgentUninstallModal from "../components/AgentUninstallModal";
 import ArtifactCard from "../components/ArtifactCard";
 import ArtifactCardGrid from "../components/ArtifactCardGrid";
 import type { ArtifactRow } from "../components/artifactRow";
 import {
-  applyAgentInstallDependencies,
+  applyPatchesToRows,
+  artifactRowKey,
+  buildAgentScopeOffPatches,
+  deletableDependentSkillsForAgentInScope,
+  type InstallScope,
+  findInstallation,
   isGlobalDisabled,
   isProjectDisabled,
 } from "../components/artifactRow";
@@ -29,9 +35,7 @@ function buildRows(
   defaultProjectPath: string,
 ): ArtifactRow[] {
   return artifacts.map((artifact) => {
-    const existing = installations.find(
-      (i) => i.repoId === repoId && i.artifactId === artifact.id,
-    );
+    const existing = findInstallation(installations, repoId, artifact);
     return {
       artifact,
       global: existing?.global ?? false,
@@ -53,7 +57,10 @@ function rowsToInstallations(
   const current: Installation[] = [];
 
   for (const row of rows) {
-    const prev = previous.find((i) => i.artifactId === row.artifact.id);
+    const prev = previous.find(
+      (i) =>
+        i.artifactId === row.artifact.id && i.kind === row.artifact.kind,
+    );
     // Active install uses launch cwd only; keep previous path when off for symlink removal.
     const projectPath = row.project
       ? defaultProjectPath || null
@@ -88,6 +95,11 @@ export default function ArtifactListPage({
   const [error, setError] = useState<string | null>(null);
   const [defaultProjectPath, setDefaultProjectPath] = useState("");
   const [sessionReady, setSessionReady] = useState(false);
+  const [pendingAgentOff, setPendingAgentOff] = useState<{
+    rowKey: string;
+    scope: InstallScope;
+    patch: Partial<ArtifactRow>;
+  } | null>(null);
 
   const visibleRows = useMemo(
     () => rows.filter((row) => row.artifact.kind === kind),
@@ -136,32 +148,22 @@ export default function ArtifactListPage({
     );
   }, [repoId, installations, defaultProjectPath, sessionReady, loadArtifacts]);
 
-  const persistAndApply = useCallback(
-    async (artifactId: string, patch: Partial<ArtifactRow>) => {
-      if (!repoId) return;
+  const persistAndApplyPatches = useCallback(
+    async (
+      patchesByKey: Record<string, Partial<ArtifactRow>>,
+      applyingRowKey: string,
+    ) => {
+      if (!repoId || Object.keys(patchesByKey).length === 0) return;
 
       const currentRows = rows;
-      const patchedRows = currentRows.map((row) => {
-        if (row.artifact.id !== artifactId) return row;
-        const updated = { ...row, ...patch };
-        if (
-          patch.projectPath !== undefined &&
-          !updated.projectPath.trim() &&
-          defaultProjectPath
-        ) {
-          updated.projectPath = defaultProjectPath;
-        }
-        return updated;
-      });
-      const nextRows = applyAgentInstallDependencies(
-        patchedRows,
-        artifactId,
-        patch,
+      const nextRows = applyPatchesToRows(
+        currentRows,
+        patchesByKey,
         defaultProjectPath,
       );
 
       setRows(nextRows);
-      setApplyingId(artifactId);
+      setApplyingId(applyingRowKey);
       setError(null);
 
       try {
@@ -173,7 +175,19 @@ export default function ArtifactListPage({
         );
         await api.saveInstallations(next);
         setInstallations(next);
-        await api.apply();
+        const { results } = await api.apply();
+        const failures = results.filter((r) => r.error);
+        if (failures.length > 0) {
+          const preview = failures
+            .slice(0, 3)
+            .map((r) => `${r.path}: ${r.error}`)
+            .join("\n");
+          const more =
+            failures.length > 3 ? `\n…and ${failures.length - 3} more` : "";
+          setError(
+            `Could not remove some symlinks (target is not a symlink or is missing):\n${preview}${more}`,
+          );
+        }
       } catch (err) {
         setRows(currentRows);
         setError(err instanceof Error ? err.message : String(err));
@@ -184,22 +198,73 @@ export default function ArtifactListPage({
     [repoId, rows, installations, defaultProjectPath],
   );
 
-  function handleGlobalClick(artifactId: string) {
-    const row = rows.find((r) => r.artifact.id === artifactId);
-    if (!row || isGlobalDisabled(row, rows)) return;
+  const persistAndApply = useCallback(
+    async (row: ArtifactRow, patch: Partial<ArtifactRow>) => {
+      const key = artifactRowKey(row.artifact);
+      await persistAndApplyPatches({ [key]: patch }, key);
+    },
+    [persistAndApplyPatches],
+  );
 
-    void persistAndApply(artifactId, { global: !row.global });
+  function handleScopeClick(row: ArtifactRow, scope: InstallScope) {
+    if (!row) return;
+    if (scope === "global" && isGlobalDisabled(row, rows)) return;
+    if (scope === "project" && isProjectDisabled(row, rows)) return;
+
+    const patch: Partial<ArtifactRow> =
+      scope === "global"
+        ? { global: !row.global }
+        : {
+            project: !row.project,
+            ...(!row.project ? { projectPath: defaultProjectPath } : {}),
+          };
+
+    const turningOff =
+      (scope === "global" && row.global) || (scope === "project" && row.project);
+
+    if (row.artifact.kind === "agent" && turningOff) {
+      const deletable = deletableDependentSkillsForAgentInScope(row, rows, scope);
+      if (deletable.length > 0) {
+        setPendingAgentOff({
+          rowKey: artifactRowKey(row.artifact),
+          scope,
+          patch,
+        });
+        return;
+      }
+    }
+
+    void persistAndApply(row, patch);
   }
 
-  function handleProjectClick(artifactId: string) {
-    const row = rows.find((r) => r.artifact.id === artifactId);
-    if (!row || isProjectDisabled(row, rows)) return;
-
-    void persistAndApply(artifactId, {
-      project: !row.project,
-      ...(!row.project ? { projectPath: defaultProjectPath } : {}),
-    });
+  function handleAgentOffConfirm(selectedSkillIds: string[]) {
+    if (!pendingAgentOff) return;
+    const agentRow = rows.find(
+      (r) => artifactRowKey(r.artifact) === pendingAgentOff.rowKey,
+    );
+    if (!agentRow) {
+      setPendingAgentOff(null);
+      return;
+    }
+    const { scope, patch } = pendingAgentOff;
+    setPendingAgentOff(null);
+    void persistAndApplyPatches(
+      buildAgentScopeOffPatches(agentRow, scope, patch, selectedSkillIds),
+      artifactRowKey(agentRow.artifact),
+    );
   }
+
+  const pendingAgentRow = pendingAgentOff
+    ? rows.find((r) => artifactRowKey(r.artifact) === pendingAgentOff.rowKey)
+    : undefined;
+  const pendingDeletableSkills =
+    pendingAgentRow && pendingAgentOff
+      ? deletableDependentSkillsForAgentInScope(
+          pendingAgentRow,
+          rows,
+          pendingAgentOff.scope,
+        )
+      : [];
 
   const repoOptions = repos.map((r) => ({ value: r.id, label: r.id }));
 
@@ -229,17 +294,31 @@ export default function ArtifactListPage({
         <ArtifactCardGrid>
           {visibleRows.map((row) => (
             <ArtifactCard
-              key={row.artifact.id}
+              key={artifactRowKey(row.artifact)}
               row={row}
               rows={rows}
-              applying={applyingId === row.artifact.id}
-              onGlobalClick={() => handleGlobalClick(row.artifact.id)}
-              onProjectClick={() => handleProjectClick(row.artifact.id)}
+              applying={applyingId === artifactRowKey(row.artifact)}
+              onGlobalClick={() => handleScopeClick(row, "global")}
+              onProjectClick={() => handleScopeClick(row, "project")}
             />
           ))}
         </ArtifactCardGrid>
       )}
 
+      {kind === "agent" && pendingAgentRow && pendingAgentOff ? (
+        <AgentUninstallModal
+          opened
+          agentName={pendingAgentRow.artifact.name}
+          scope={pendingAgentOff.scope}
+          deletableSkills={pendingDeletableSkills}
+          loading={
+            pendingAgentRow !== undefined &&
+            applyingId === artifactRowKey(pendingAgentRow.artifact)
+          }
+          onClose={() => setPendingAgentOff(null)}
+          onConfirm={handleAgentOffConfirm}
+        />
+      ) : null}
     </Stack>
   );
 }

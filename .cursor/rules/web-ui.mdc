@@ -27,12 +27,24 @@ web/src/
 ## UX rules
 
 - **Global** / **Project** icons are independent toggles; both may be on; click applies immediately (no Save button).
-- Click active icon → deactivate and remove symlink.
+- Click active icon → deactivate (remove symlink only; never delete repo/catalog files).
 - `defaultProjectPath` from `/api/status` (CLI cwd) is the only project install path; read-only in UI. Saved `projectPath` in config when project is off is kept for symlink removal only.
 - Cards: max 480px, grid `auto-fill` in `ArtifactCardGrid`.
 - Scope from frontmatter disables toggles; blocked paths (non-symlink exists) disable toggles.
 - Agent cards list `skillDependencies` with description tooltips; skill toggles stay disabled while a dependent agent is installed.
+- Turning off **global** or **project** on an agent (each scope separately): if dependent skills are installed in that scope and unused by other agents in the same scope, modal offers optional skill removal for that scope only (checkboxes, default off).
+- Match installations and row patches by `repoId` + `kind` + `artifactId` (skill and agent may share the same id string, e.g. `article-architect`); UI row key is `kind:id`.
 
 ## Dev
 
 `npm run dev` — server :3921 + Vite :5173 with `/api` proxy.
+
+## Tests (required)
+
+After any change under `web/` (components, pages, install/uninstall UX, `artifactRow` helpers), **run before finishing**:
+
+```bash
+npm run test:web
+```
+
+Add or update tests in `web/src/**/*.test.ts` when behavior changes (install scopes, agent/skill id collisions, deletable dependents, patches). Do not merge web UX logic changes without green tests.

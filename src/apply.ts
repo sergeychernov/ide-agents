@@ -124,6 +124,63 @@ async function applyScope(
   return results;
 }
 
+function installationKey(installation: {
+  repoId: string;
+  kind: string;
+  artifactId: string;
+}): string {
+  return `${installation.repoId}:${installation.kind}:${installation.artifactId}`;
+}
+
+/** Remove symlinks for an installation (e.g. dropped from config). */
+export async function removeInstallationSymlinks(
+  installation: IdeAgentsConfig["installations"][number],
+  config: IdeAgentsConfig,
+): Promise<ApplyResultItem[]> {
+  const adapters = getEnabledAdapters(config);
+  const results: ApplyResultItem[] = [];
+  const repo = config.repos.find((r) => r.id === installation.repoId);
+  if (!repo) {
+    return results;
+  }
+
+  const repoRoot = getRepoPath(repo.slug);
+  const type = installation.kind === "skill" ? "dir" : "file";
+
+  for (const adapter of adapters) {
+    const sourcePath = adapter.getSourcePath(repoRoot, installation);
+    const globalTarget = adapter.getGlobalTargetPath(installation);
+
+    results.push(
+      ...(await applyScope(sourcePath, type, false, globalTarget, null)),
+    );
+
+    if (installation.projectPath) {
+      const projectRoot = resolveProjectPath(installation.projectPath);
+      const projectTarget = adapter.getProjectTargetPath(installation);
+      results.push(
+        ...(await applyScope(
+          sourcePath,
+          type,
+          false,
+          projectTarget,
+          projectRoot,
+        )),
+      );
+    }
+  }
+
+  return results;
+}
+
+export function findRemovedInstallations(
+  previous: IdeAgentsConfig["installations"],
+  next: IdeAgentsConfig["installations"],
+): IdeAgentsConfig["installations"] {
+  const nextKeys = new Set(next.map(installationKey));
+  return previous.filter((i) => !nextKeys.has(installationKey(i)));
+}
+
 export async function applyInstallations(
   config: IdeAgentsConfig,
 ): Promise<ApplyResult> {

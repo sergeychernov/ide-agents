@@ -19,7 +19,8 @@ Install skills and subagents into your IDE via symlinks — no copy-paste, no ma
 ## Requirements
 
 - **macOS** or **Linux** (Windows is not supported in v0.1)
-- **Node.js 20+**
+- **Node.js 20+** — to run `ide-agents` (`npm i -g ide-agents` or `npm start`)
+- **Node.js 20.19+** (or **22 LTS**) — to develop from source (`npm run dev`, `npm run build`; Vite 8 / Rolldown)
 - **git** in PATH
 
 ## Install
@@ -133,6 +134,19 @@ For local testing, add a `file://` URL to any git repo with skills/agents (see [
 ```
 
 Docs: [Settings & IDEs](https://ide-agents.vercel.app/docs/settings) on the project site.
+
+## Troubleshooting
+
+### `Cannot find native binding` / `@rolldown/binding-darwin-arm64`
+
+Vite 8 uses Rolldown native binaries (optional npm deps). If `npm run dev` fails:
+
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
+
+Ensure Node **20.19+** when developing from source (`node -v`). The repo ships `.npmrc` with `include=optional` and platform bindings in `optionalDependencies`.
 
 ## License
 

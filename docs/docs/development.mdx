@@ -7,6 +7,8 @@ title: Development
 
 ## Setup
 
+**Node.js 20.19+** (or 22 LTS) is required for `npm install` / `npm run dev` (Vite 8).
+
 ```bash
 git clone https://github.com/sergeychernov/ide-agents.git
 cd ide-agents
@@ -25,6 +27,9 @@ npm install
 | `npm run docs:build` | Build documentation site |
 | `npm run lint` | ESLint (`src/`, `web/`, `template/**/*.mjs`) |
 | `npm run lint:fix` | ESLint with autofix |
+| `npm test` | Vitest (web + server) |
+| `npm run test:web` | UI / install logic tests |
+| `npm run test:server` | Backend apply/installations tests |
 
 ## Project structure
 
