@@ -35,8 +35,13 @@ Markdown files in `agents/<agent-id>.md`. Required frontmatter:
 name: agent-id          # must match filename stem
 description: When the IDE should delegate to this subagent.
 scope: any              # optional — ide-agents install toggles
+skills:                 # optional — dependent skill ids (YAML block list)
+  - related-skill
 ---
 ```
+
+When present, `skills` tells ide-agents which catalog skills must be installed with
+the agent. Omit it for standalone agents; do not use inline arrays.
 
 Project installs use `.agents/agents/<name>.md`.
 

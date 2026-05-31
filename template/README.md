@@ -39,8 +39,15 @@ Agent files live in `agents/<agent-id>.md`. YAML frontmatter:
 name: my-agent
 description: When the IDE should delegate to this subagent.
 scope: any   # global | project | any — ide-agents install toggles only
+skills:      # optional — dependent skill ids (block list)
+  - related-skill
 ---
 ```
+
+`skills` lists skill ids the agent orchestrates or depends on. ide-agents installs them
+together with the agent and blocks removing a skill while a dependent agent stays
+installed. Standalone agents omit `skills`; do not use inline arrays such as
+`skills: []` or `skills: [related-skill]`.
 
 `name` must match the filename stem (`agents/oracle.md` → `name: oracle`). Subagents install to `~/.cursor/agents/<name>.md` (or project `.cursor/agents/`); invoke in Agent mode by name, not via the `/` skill menu.
 
@@ -51,7 +58,7 @@ This repo was bootstrapped with a demo skill and a starter agent. Extend or repl
 | Kind | ID | Purpose |
 |------|-----|---------|
 | skill | `hello` | Install smoke-test + `scripts/now.mjs` (system clock) |
-| agent | `oracle` | Joke fortune-teller — always upbeat predictions |
+| agent | `oracle` | Joke fortune-teller — depends on `hello` for optional clock anchor |
 
 ## Next steps
 

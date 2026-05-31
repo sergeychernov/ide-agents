@@ -50,12 +50,14 @@ scope: any
 |-------|-------------|
 | `global` | Only Global toggle enabled |
 | `project` | Only Project toggle enabled |
-| `any` | Both toggles available (mutually exclusive) |
+| `any` | Both toggles available (independent) |
 | *(missing)* | Same as `any` |
 
 ## Agents
 
-Agent files are `agents/<name>.md`. Optional YAML frontmatter with `description` and `scope` (same values as skills).
+Agent files are `agents/<name>.md`. Optional YAML frontmatter with `description`, `scope` (same values as skills), and `skills` (block list of skill ids the agent depends on).
+
+When an agent lists `skills`, ide-agents auto-installs those skills with the same scope (Global or Project) and blocks removing an installed skill while a dependent agent remains installed.
 
 ## Adding a repository
 

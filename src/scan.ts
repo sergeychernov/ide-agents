@@ -22,6 +22,18 @@ function parseAllowedScope(
   return "any";
 }
 
+function parseAgentSkills(data: Record<string, unknown>): string[] {
+  const skills = data.skills;
+  if (!Array.isArray(skills)) {
+    return [];
+  }
+
+  return skills
+    .filter((entry): entry is string => typeof entry === "string")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
 function parseAgentDescription(content: string, fallbackName: string): string {
   const parsed = matter(content);
   if (typeof parsed.data.description === "string" && parsed.data.description.trim()) {
@@ -163,6 +175,10 @@ async function scanAgents(repoPath: string): Promise<Artifact[]> {
       parsed.data as Record<string, unknown>,
     );
 
+    const dependsOnSkills = parseAgentSkills(
+      parsed.data as Record<string, unknown>,
+    );
+
     artifacts.push({
       id,
       kind: "agent",
@@ -170,10 +186,37 @@ async function scanAgents(repoPath: string): Promise<Artifact[]> {
       name: id,
       description,
       allowedScope,
+      ...(dependsOnSkills.length > 0 ? { dependsOnSkills } : {}),
     });
   }
 
   return artifacts.sort((a, b) => a.id.localeCompare(b.id));
+}
+
+function enrichSkillDependencies(artifacts: Artifact[]): Artifact[] {
+  const skillsById = new Map(
+    artifacts.filter((artifact) => artifact.kind === "skill").map((skill) => [
+      skill.id,
+      skill,
+    ]),
+  );
+
+  return artifacts.map((artifact) => {
+    if (artifact.kind !== "agent" || !artifact.dependsOnSkills?.length) {
+      return artifact;
+    }
+
+    const skillDependencies = artifact.dependsOnSkills.map((skillId) => {
+      const skill = skillsById.get(skillId);
+      return {
+        id: skillId,
+        name: skill?.name ?? skillId,
+        description: skill?.description ?? "",
+      };
+    });
+
+    return { ...artifact, skillDependencies };
+  });
 }
 
 export async function scanRepoArtifacts(repoPath: string): Promise<Artifact[]> {
@@ -181,5 +224,5 @@ export async function scanRepoArtifacts(repoPath: string): Promise<Artifact[]> {
     scanSkills(repoPath),
     scanAgents(repoPath),
   ]);
-  return [...skills, ...agents];
+  return enrichSkillDependencies([...skills, ...agents]);
 }

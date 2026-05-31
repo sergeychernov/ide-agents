@@ -27,4 +27,4 @@ Use `execFile` for git commands. Support `file://` URLs. Do not store credential
 ## Scanning
 
 Skills: `skills/<name>/SKILL.md` (nested), or `<name>/SKILL.md` at repo root (flat fallback). Directories without `SKILL.md` are ignored. Frontmatter `name`, `description`, `scope` (defaults to `any` when omitted).
-Agents: `agents/*.md`, optional frontmatter `scope` (defaults to `any` when omitted).
+Agents: `agents/*.md`, optional frontmatter `scope` (defaults to `any` when omitted), optional `skills` (YAML block list of skill ids — auto-install + removal guard in UI).

@@ -27,8 +27,9 @@ This repository is an **ide-agents skill catalog** — not an application codeba
 ## Agents
 
 - One markdown file per agent in `agents/` (e.g. `agents/oracle.md`).
-- YAML frontmatter: `name`, `description`, optional `scope` (`global`, `project`, or `any`).
+- YAML frontmatter: `name`, `description`, optional `scope` (`global`, `project`, or `any`), optional `skills` (block list of skill ids).
 - `name` must match the filename stem; used by Cursor/Claude/Codex as the subagent id.
+- `skills` declares dependencies — ide-agents auto-installs them with the agent and blocks skill removal while a dependent agent is installed.
 - Agents **orchestrate**; deterministic generators live in `skills/<id>/scripts/` (see `agents.mdc`).
 
 ## Scripts (generators)

@@ -59,6 +59,12 @@ export interface ArtifactTargets {
   project: TargetStatus | null;
 }
 
+export interface SkillDependency {
+  id: string;
+  name: string;
+  description: string;
+}
+
 export interface Artifact {
   id: string;
   kind: ArtifactKind;
@@ -67,6 +73,8 @@ export interface Artifact {
   description: string;
   hasSkillMd?: boolean;
   allowedScope: ArtifactAllowedScope | null;
+  dependsOnSkills?: string[];
+  skillDependencies?: SkillDependency[];
   targets?: ArtifactTargets;
 }
 

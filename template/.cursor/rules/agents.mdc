@@ -43,14 +43,24 @@ YAML frontmatter (filename stem must match `name`, e.g. `agents/oracle.md` → `
 name: my-agent          # required — lowercase id; Cursor subagent identity (/my-agent)
 description: When to delegate to this subagent. Be specific — the IDE uses this for auto-delegation.
 scope: any              # optional — ide-agents only: global | project | any (default any)
+skills:                 # optional — skill ids this agent orchestrates or depends on
+  - related-skill
 ---
 ```
+
+Use `skills` to list skill ids that the subagent orchestrates or depends on.
+ide-agents uses this list to install dependent skills together with the agent and to
+block removing a skill while a dependent agent stays installed. When `skills` is
+present, always use YAML block-list style. For standalone agents that do not require
+bundled skills, omit the field entirely. Do not use inline arrays such as
+`skills: []` or `skills: [related-skill]`.
 
 | Field | Required | Used by |
 |-------|----------|---------|
 | `name` | yes | Cursor / Claude / Codex subagent id (defaults to filename if omitted — prefer explicit) |
 | `description` | yes | IDE delegation — when the main agent should hand off to this subagent |
 | `scope` | no | ide-agents UI — which install toggles are enabled |
+| `skills` | no | ide-agents UI — dependent skill ids (auto-install + removal guard) |
 
 Subagents are **not** skills: they live in `agents/*.md`, install to `~/.cursor/agents/`, and are invoked by name in Agent mode (e.g. `/oracle …` or “use the oracle subagent”), not via the `/` skill picker.
 

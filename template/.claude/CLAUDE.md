@@ -7,7 +7,7 @@ This repo is a **skills and agents catalog** for ide-agents.
 - `skills/<name>/SKILL.md` — skills with YAML frontmatter (`name`, `description`, `scope`)
 - `skills/<name>/scripts/` — optional Node `.mjs` generators (stable scans, JSON reports)
 - `skills/<name>/assets/` — optional JSON/markers scripts read
-- `agents/<name>.md` — subagent orchestrators; frontmatter `name`, `description`, optional `scope`
+- `agents/<name>.md` — subagent orchestrators; frontmatter `name`, `description`, optional `scope`, optional `skills` (block list of skill ids)
 
 ## Agents and scripts
 

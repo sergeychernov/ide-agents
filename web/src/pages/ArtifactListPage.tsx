@@ -11,6 +11,7 @@ import ArtifactCard from "../components/ArtifactCard";
 import ArtifactCardGrid from "../components/ArtifactCardGrid";
 import type { ArtifactRow } from "../components/artifactRow";
 import {
+  applyAgentInstallDependencies,
   isGlobalDisabled,
   isProjectDisabled,
 } from "../components/artifactRow";
@@ -140,7 +141,7 @@ export default function ArtifactListPage({
       if (!repoId) return;
 
       const currentRows = rows;
-      const nextRows = currentRows.map((row) => {
+      const patchedRows = currentRows.map((row) => {
         if (row.artifact.id !== artifactId) return row;
         const updated = { ...row, ...patch };
         if (
@@ -152,6 +153,12 @@ export default function ArtifactListPage({
         }
         return updated;
       });
+      const nextRows = applyAgentInstallDependencies(
+        patchedRows,
+        artifactId,
+        patch,
+        defaultProjectPath,
+      );
 
       setRows(nextRows);
       setApplyingId(artifactId);
@@ -179,24 +186,18 @@ export default function ArtifactListPage({
 
   function handleGlobalClick(artifactId: string) {
     const row = rows.find((r) => r.artifact.id === artifactId);
-    if (!row || isGlobalDisabled(row)) return;
+    if (!row || isGlobalDisabled(row, rows)) return;
 
-    const global = !row.global;
-    void persistAndApply(artifactId, {
-      global,
-      project: global ? false : row.project,
-    });
+    void persistAndApply(artifactId, { global: !row.global });
   }
 
   function handleProjectClick(artifactId: string) {
     const row = rows.find((r) => r.artifact.id === artifactId);
-    if (!row || isProjectDisabled(row)) return;
+    if (!row || isProjectDisabled(row, rows)) return;
 
-    const project = !row.project;
     void persistAndApply(artifactId, {
-      project,
-      global: project ? false : row.global,
-      ...(project ? { projectPath: defaultProjectPath } : {}),
+      project: !row.project,
+      ...(!row.project ? { projectPath: defaultProjectPath } : {}),
     });
   }
 
@@ -230,6 +231,7 @@ export default function ArtifactListPage({
             <ArtifactCard
               key={row.artifact.id}
               row={row}
+              rows={rows}
               applying={applyingId === row.artifact.id}
               onGlobalClick={() => handleGlobalClick(row.artifact.id)}
               onProjectClick={() => handleProjectClick(row.artifact.id)}

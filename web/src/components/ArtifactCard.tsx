@@ -1,5 +1,6 @@
 import {
   ActionIcon,
+  Badge,
   Card,
   Group,
   Stack,
@@ -65,6 +66,7 @@ function ScopeToggle({
 
 export interface ArtifactCardProps {
   row: ArtifactRow;
+  rows: ArtifactRow[];
   applying?: boolean;
   onGlobalClick: () => void;
   onProjectClick: () => void;
@@ -72,10 +74,13 @@ export interface ArtifactCardProps {
 
 export default function ArtifactCard({
   row,
+  rows,
   applying,
   onGlobalClick,
   onProjectClick,
 }: ArtifactCardProps) {
+  const skillDependencies = row.artifact.skillDependencies ?? [];
+
   return (
     <Card withBorder padding="lg" radius="md" w="100%" maw={480}>
       <Stack gap="md">
@@ -86,19 +91,19 @@ export default function ArtifactCard({
           <Group gap="xs" wrap="nowrap">
             <ScopeToggle
               active={row.global}
-              disabled={isGlobalDisabled(row)}
+              disabled={isGlobalDisabled(row, rows)}
               loading={applying}
               label="Global"
-              reason={globalDisabledReason(row)}
+              reason={globalDisabledReason(row, rows)}
               icon={IconWorld}
               onClick={onGlobalClick}
             />
             <ScopeToggle
               active={row.project}
-              disabled={isProjectDisabled(row)}
+              disabled={isProjectDisabled(row, rows)}
               loading={applying}
               label="Project"
-              reason={projectDisabledReason(row)}
+              reason={projectDisabledReason(row, rows)}
               icon={IconFolder}
               onClick={onProjectClick}
             />
@@ -109,6 +114,30 @@ export default function ArtifactCard({
           <Text size="sm" c="dimmed" lineClamp={3}>
             {row.artifact.description}
           </Text>
+        ) : null}
+
+        {row.artifact.kind === "agent" && skillDependencies.length > 0 ? (
+          <Stack gap={6}>
+            <Text size="sm" fw={600}>
+              Skills
+            </Text>
+            <Group gap="xs">
+              {skillDependencies.map((skill) => (
+                <Tooltip
+                  key={skill.id}
+                  label={skill.description || skill.name}
+                  multiline
+                  maw={280}
+                  withArrow
+                  disabled={!skill.description}
+                >
+                  <Badge variant="light" color="gray" style={{ cursor: "default" }}>
+                    {skill.name}
+                  </Badge>
+                </Tooltip>
+              ))}
+            </Group>
+          </Stack>
         ) : null}
 
         <TextInput
