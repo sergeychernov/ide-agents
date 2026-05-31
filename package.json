@@ -1,6 +1,6 @@
 {
   "name": "ide-agents",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Local admin for IDE agents and skills from git repos",
   "type": "module",
   "bin": {
