@@ -1,0 +1,33 @@
+---
+description: Visible UI page changes only — remind to refresh tour, capture, and Docusaurus; otherwise silent
+globs: web/src/pages/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# UI ↔ documentation sync
+
+When you **edit or add** files under `web/src/pages/`:
+
+## Visible UI changes only
+
+Remind about documentation **only** when the diff affects something a user would **see** in the running app (layout, copy, new/removed routes, controls, empty states, modals, screenshots in docs).
+
+If the change is **not visible** (refactor, types, hooks wiring, tests, performance, rename without UX change) — **do not** mention tour, capture, or docs. Stay silent on documentation.
+
+## Reminder (end of reply, visible changes only)
+
+Short **Documentation** checklist — do not run capture unless the user asks:
+
+1. **Tour** — update `.docs-capture/tour.json` if URLs, nav, or screens changed (`pages[]`, `baseURL`, `server`).
+2. **Screenshots** — refresh assets:
+   ```bash
+   node .cursor/skills/playwright-screenshots/scripts/capture.mjs --json
+   ```
+   Commit updated PNGs under `docs/static/img/ui/` and `.docs-capture/manifest.json`.
+3. **Docs** — **`docusaurus-scribe`** or update `docs/src/pages/index.tsx`, `docs/docs/*.mdx`, `docs/sidebars.ts` to match the manifest.
+
+## Agent hints
+
+- Prose/structure without new pixels → `docusaurus-scribe` with existing manifest (no capture).
+- New or redesigned screens → tour + capture first, then scribe.
+- Do not invent screenshot paths; use `.docs-capture/manifest.json` after capture.

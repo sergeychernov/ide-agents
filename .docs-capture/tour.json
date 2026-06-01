@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "baseURL": "http://127.0.0.1:5173",
+  "server": {
+    "command": "npm run dev",
+    "cwd": ".",
+    "readyUrl": "http://127.0.0.1:5173/repositories",
+    "readyTimeoutMs": 90000
+  },
+  "outputDir": "docs/static/img/ui",
+  "viewport": { "width": 1440, "height": 900 },
+  "pages": [
+    {
+      "id": "repositories",
+      "path": "/repositories",
+      "title": "Repositories",
+      "fullPage": false,
+      "actions": [{ "waitForSelector": "main", "timeoutMs": 15000 }]
+    },
+    {
+      "id": "settings",
+      "path": "/settings",
+      "title": "Settings",
+      "fullPage": false,
+      "actions": [{ "waitForSelector": "main", "timeoutMs": 15000 }]
+    },
+    {
+      "id": "skills",
+      "path": "/skills",
+      "title": "Skills",
+      "fullPage": false,
+      "actions": [{ "waitForSelector": "main", "timeoutMs": 15000 }]
+    },
+    {
+      "id": "agents",
+      "path": "/agents",
+      "title": "Agents",
+      "fullPage": false,
+      "actions": [{ "waitForSelector": "main", "timeoutMs": 15000 }]
+    }
+  ]
+}

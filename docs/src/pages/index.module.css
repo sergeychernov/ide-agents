@@ -1,23 +1,272 @@
-/**
- * CSS files with the .module.css suffix will be treated as CSS modules
- * and scoped locally.
- */
-
-.heroBanner {
-  padding: 4rem 0;
+.hero {
+  padding: 3rem 0 0;
   text-align: center;
-  position: relative;
-  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    var(--ifm-color-primary) 0%,
+    var(--ifm-color-primary-dark) 42%,
+    var(--ifm-background-color) 100%
+  );
+  color: var(--ifm-font-color-base-inverse);
 }
 
-@media screen and (max-width: 996px) {
-  .heroBanner {
-    padding: 2rem;
+[data-theme='dark'] .hero {
+  background: linear-gradient(
+    180deg,
+    var(--ifm-color-primary-darkest) 0%,
+    var(--ifm-background-surface-color) 85%
+  );
+  color: var(--ifm-font-color-base);
+}
+
+.eyebrow {
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.9;
+  margin-bottom: 0.75rem;
+}
+
+.heroTitle {
+  font-size: clamp(2rem, 5vw, 3rem);
+  max-width: 18ch;
+  margin: 0 auto 1rem;
+  line-height: 1.15;
+  color: inherit;
+}
+
+.heroAccent {
+  color: var(--ifm-color-warning);
+  font-weight: 700;
+}
+
+[data-theme='dark'] .heroAccent {
+  color: var(--ifm-color-warning-light);
+}
+
+.heroLead {
+  font-size: 1.15rem;
+  max-width: 42rem;
+  margin: 0 auto 1.5rem;
+  line-height: 1.55;
+  opacity: 0.95;
+}
+
+.heroCtas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.heroBadge {
+  margin-left: 0.25rem;
+}
+
+.installBlock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: baseline;
+  margin-bottom: 0.75rem;
+}
+
+.installCode {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+[data-theme='dark'] .installCode {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.installThen {
+  opacity: 0.8;
+  font-size: 0.9rem;
+}
+
+.disclaimer {
+  font-size: 0.8rem;
+  opacity: 0.75;
+  margin-bottom: 2rem;
+}
+
+.heroShotWrap {
+  padding-bottom: 3rem;
+  max-width: 1100px;
+}
+
+.shotFrame {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+  background: var(--ifm-background-surface-color);
+}
+
+.shotImg {
+  display: block;
+  width: 100%;
+  height: auto;
+  vertical-align: middle;
+}
+
+.strip {
+  padding: 2.5rem 0;
+  background: var(--ifm-background-surface-color);
+  border-bottom: 1px solid var(--ifm-toc-border-color);
+}
+
+.stripList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  text-align: center;
+}
+
+.stripList li {
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.feature {
+  padding: 4rem 0;
+}
+
+.feature:nth-child(even) {
+  background: var(--ifm-background-surface-color);
+}
+
+.featureGrid {
+  display: grid;
+  gap: 2.5rem;
+  align-items: center;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 996px) {
+  .featureGrid {
+    grid-template-columns: 1fr 1.1fr;
+  }
+
+  .featureReverse .featureGrid {
+    direction: rtl;
+  }
+
+  .featureReverse .featureGrid > * {
+    direction: ltr;
   }
 }
 
-.buttons {
+.featureTitle {
+  font-size: 1.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.featureBody {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--ifm-color-content-secondary);
+  margin: 0;
+}
+
+.steps {
+  padding: 4rem 0;
+}
+
+.sectionTitle {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.stepList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 1.25rem;
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+.stepCard {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1.25rem 1.5rem;
+  border-radius: 10px;
+  border: 1px solid var(--ifm-toc-border-color);
+  background: var(--ifm-card-background-color);
+}
+
+.stepNum {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-weight: 700;
+  background: var(--ifm-color-primary);
+  color: var(--ifm-color-white);
+}
+
+.stepCard p {
+  margin: 0.35rem 0 0;
+  color: var(--ifm-color-content-secondary);
+}
+
+.stepPre {
+  margin: 0.5rem 0 0;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: var(--ifm-code-background);
+}
+
+.cta {
+  padding: 4rem 0 5rem;
+  text-align: center;
+  background: var(--ifm-color-primary);
+  color: var(--ifm-font-color-base-inverse);
+}
+
+.cta h2 {
+  color: inherit;
+  margin-bottom: 0.75rem;
+}
+
+.cta p {
+  max-width: 36rem;
+  margin: 0 auto 1.5rem;
+  opacity: 0.95;
+}
+
+.cta code {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+
+.ctaButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.cta .button--outline {
+  --ifm-button-background-color: transparent;
+  --ifm-button-border-color: rgba(255, 255, 255, 0.85);
+  color: #fff;
 }

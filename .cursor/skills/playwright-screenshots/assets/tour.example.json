@@ -1,0 +1,30 @@
+{
+  "$comment": "Copy to <repo>/.docs-capture/tour.json and edit. Run: node <SKILL_DIR>/scripts/capture.mjs",
+  "version": 1,
+  "baseURL": "http://127.0.0.1:5173",
+  "server": {
+    "command": "npm run dev",
+    "cwd": ".",
+    "readyUrl": "http://127.0.0.1:5173",
+    "readyTimeoutMs": 120000
+  },
+  "outputDir": "docs/static/img/ui",
+  "viewport": { "width": 1280, "height": 720 },
+  "pages": [
+    {
+      "id": "home",
+      "path": "/",
+      "title": "Home",
+      "fullPage": true
+    },
+    {
+      "id": "settings",
+      "path": "/settings",
+      "title": "Settings",
+      "fullPage": true,
+      "actions": [
+        { "waitForSelector": "main", "timeoutMs": 10000 }
+      ]
+    }
+  ]
+}

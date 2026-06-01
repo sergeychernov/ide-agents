@@ -1,0 +1,43 @@
+{
+  "repoRoot": "/Users/cernovsergej/code/ide-agents",
+  "tourPath": ".docs-capture/tour.json",
+  "baseURL": "http://127.0.0.1:5173",
+  "outputDir": "docs/static/img/ui",
+  "screenshots": [
+    {
+      "id": "repositories",
+      "title": "Repositories",
+      "path": "/repositories",
+      "file": "docs/static/img/ui/repositories.png",
+      "url": "http://127.0.0.1:5173/repositories",
+      "mode": "test"
+    },
+    {
+      "id": "settings",
+      "title": "Settings",
+      "path": "/settings",
+      "file": "docs/static/img/ui/settings.png",
+      "url": "http://127.0.0.1:5173/settings",
+      "mode": "test"
+    },
+    {
+      "id": "skills",
+      "title": "Skills",
+      "path": "/skills",
+      "file": "docs/static/img/ui/skills.png",
+      "url": "http://127.0.0.1:5173/skills",
+      "mode": "test"
+    },
+    {
+      "id": "agents",
+      "title": "Agents",
+      "path": "/agents",
+      "file": "docs/static/img/ui/agents.png",
+      "url": "http://127.0.0.1:5173/agents",
+      "mode": "test"
+    }
+  ],
+  "generatedBy": "playwright-screenshots",
+  "version": "1.0.0",
+  "generatedAt": "2026-06-01T11:47:02.695Z"
+}

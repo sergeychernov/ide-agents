@@ -4,5 +4,7 @@ web/dist/
 docs/node_modules/
 docs/build/
 docs/.docusaurus/
+# Regenerated on every capture from tour.json — not a source of truth
+.docs-capture/run.capture.spec.mjs
 *.log
 .DS_Store
