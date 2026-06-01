@@ -1,13 +1,9 @@
-import {
-  Badge,
-  Button,
-  Code,
-  Group,
-  Paper,
-  Stack,
-  Text,
-} from "@mantine/core";
+import { Button, Code, Group, Paper, Stack, Text } from "@mantine/core";
 import type { Repo } from "../api/client";
+import RepoUrlLine from "./RepoUrlLine";
+import headerClasses from "./repoCardHeader.module.css";
+import hoverClasses from "./repoCardHover.module.css";
+import { useRepoCardOpen } from "./useRepoCardOpen";
 
 function repoStatus(repo: Repo): string {
   const parts = [repo.git.dirty ? "Dirty" : "Clean"];
@@ -30,9 +26,7 @@ function contentsSummary(repo: Repo): string {
 
 export interface InstalledRepoCardProps {
   repo: Repo;
-  expanded: boolean;
   loading?: boolean;
-  onToggle: () => void;
   onPull: () => void;
   onCheckUpdates: () => void;
   onBootstrap?: () => void;
@@ -41,9 +35,7 @@ export interface InstalledRepoCardProps {
 
 export default function InstalledRepoCard({
   repo,
-  expanded,
   loading,
-  onToggle,
   onPull,
   onCheckUpdates,
   onBootstrap,
@@ -51,127 +43,120 @@ export default function InstalledRepoCard({
 }: InstalledRepoCardProps) {
   const sha = repo.git.sha?.slice(0, 8) ?? "—";
   const isEmpty = repo.skillCount === 0 && repo.agentCount === 0;
+  const { cardClassName, togglePinned } = useRepoCardOpen();
 
   return (
     <Paper
       withBorder
-      p={expanded ? "sm" : "md"}
+      p="md"
       radius="md"
-      style={{
-        cursor: "pointer",
-        borderColor: expanded
-          ? "var(--mantine-color-blue-outline)"
-          : undefined,
-        background: expanded
-          ? "var(--mantine-color-blue-light)"
-          : undefined,
-      }}
-      onClick={onToggle}
+      tabIndex={0}
+      className={cardClassName}
+      onClick={togglePinned}
     >
-      <Stack gap={expanded ? "xs" : "sm"}>
+      <Stack gap="sm">
         <Group justify="space-between" align="flex-start" wrap="nowrap" gap="sm">
-          <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
-            <Text fw={600}>{repo.id}</Text>
-            <Text size="sm" c="dimmed" style={{ wordBreak: "break-all" }}>
-              {repo.url}
+          <div className={headerClasses.repoTitleRow}>
+            <Text fw={600} style={{ flexShrink: 0 }}>
+              {repo.id}
             </Text>
-          </Stack>
-          {expanded ? (
-            <Badge color="blue" style={{ flexShrink: 0 }}>
-              Selected
-            </Badge>
-          ) : (
-            <Text size="sm" c="dimmed" ta="right" style={{ flexShrink: 0 }}>
-              {contentsSummary(repo)}
-              {" · "}
-              {repo.git.branch ?? "—"}
-            </Text>
-          )}
+            <div className={headerClasses.repoUrlWrap}>
+              <RepoUrlLine url={repo.url} />
+            </div>
+          </div>
+          <Text
+            size="sm"
+            c="dimmed"
+            ta="right"
+            className={hoverClasses.collapsedMeta}
+          >
+            {contentsSummary(repo)}
+            {" · "}
+            {repo.git.branch ?? "—"}
+          </Text>
         </Group>
 
-        {expanded && (
-          <Group
-            align="flex-end"
-            justify="space-between"
-            gap="sm"
-            wrap="wrap"
-          >
-            <Stack gap={4} style={{ minWidth: 0, flex: 1 }}>
-              <Text size="sm" style={{ lineHeight: 1.45 }}>
-                <Text span c="dimmed">
-                  Catalog{" "}
-                </Text>
-                {contentsSummary(repo)}
-                <Text span c="dimmed">
-                  {" "}
-                  · {repo.git.branch ?? "—"} @{" "}
-                </Text>
-                <Code>{sha}</Code>
-                <Text span c="dimmed">
-                  {" "}
-                  ·{" "}
-                </Text>
-                {repoStatus(repo)}
-              </Text>
-              <Text size="sm" style={{ lineHeight: 1.45 }}>
-                <Text span c="dimmed">
-                  Local{" "}
-                </Text>
-                <Code
-                  style={{
-                    wordBreak: "break-all",
-                    whiteSpace: "normal",
-                  }}
-                >
-                  {repo.localPath}
-                </Code>
-              </Text>
-            </Stack>
-
+        <div className={hoverClasses.hoverDetails}>
+          <div className={hoverClasses.hoverDetailsInner}>
             <Group
-              gap="xs"
+              align="flex-end"
+              justify="space-between"
+              gap="sm"
               wrap="wrap"
-              style={{ flexShrink: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
-              {isEmpty && onBootstrap && (
+              <Stack gap={4} style={{ minWidth: 0, flex: 1 }}>
+                <Text size="sm" style={{ lineHeight: 1.45 }}>
+                  <Text span c="dimmed">
+                    Catalog{" "}
+                  </Text>
+                  {contentsSummary(repo)}
+                  <Text span c="dimmed">
+                    {" "}
+                    · {repo.git.branch ?? "—"} @{" "}
+                  </Text>
+                  <Code>{sha}</Code>
+                  <Text span c="dimmed">
+                    {" "}
+                    ·{" "}
+                  </Text>
+                  {repoStatus(repo)}
+                </Text>
+                <Text size="sm" style={{ lineHeight: 1.45 }}>
+                  <Text span c="dimmed">
+                    Local{" "}
+                  </Text>
+                  <Code
+                    style={{
+                      wordBreak: "break-all",
+                      whiteSpace: "normal",
+                    }}
+                  >
+                    {repo.localPath}
+                  </Code>
+                </Text>
+              </Stack>
+
+              <Group gap="xs" wrap="wrap" style={{ flexShrink: 0 }}>
+                {isEmpty && onBootstrap && (
+                  <Button
+                    variant="filled"
+                    size="sm"
+                    disabled={loading}
+                    onClick={onBootstrap}
+                  >
+                    Add starter template
+                  </Button>
+                )}
                 <Button
-                  variant="filled"
+                  variant="light"
                   size="sm"
                   disabled={loading}
-                  onClick={onBootstrap}
+                  onClick={onPull}
                 >
-                  Add starter template
+                  Pull
                 </Button>
-              )}
-              <Button
-                variant="light"
-                size="sm"
-                disabled={loading}
-                onClick={onPull}
-              >
-                Pull
-              </Button>
-              <Button
-                variant="light"
-                size="sm"
-                disabled={loading}
-                onClick={onCheckUpdates}
-              >
-                Check updates
-              </Button>
-              <Button
-                variant="light"
-                color="red"
-                size="sm"
-                disabled={loading}
-                onClick={onDelete}
-              >
-                Remove
-              </Button>
+                <Button
+                  variant="light"
+                  size="sm"
+                  disabled={loading}
+                  onClick={onCheckUpdates}
+                >
+                  Check updates
+                </Button>
+                <Button
+                  variant="light"
+                  color="red"
+                  size="sm"
+                  disabled={loading}
+                  onClick={onDelete}
+                >
+                  Remove
+                </Button>
+              </Group>
             </Group>
-          </Group>
-        )}
+          </div>
+        </div>
       </Stack>
     </Paper>
   );

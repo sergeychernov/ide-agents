@@ -53,7 +53,6 @@ interface RepositoriesProps {
 
 export default function Repositories({ onReposChange }: RepositoriesProps) {
   const [repos, setRepos] = useState<Repo[]>([]);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [url, setUrl] = useState("");
   const [ref, setRef] = useState("main");
   const [loading, setLoading] = useState(false);
@@ -71,12 +70,6 @@ export default function Repositories({ onReposChange }: RepositoriesProps) {
       setError(err instanceof Error ? err.message : String(err)),
     );
   }, [loadRepos]);
-
-  const expandedRepo = repos.find((r) => r.id === expandedId) ?? null;
-
-  function toggleExpanded(repoId: string) {
-    setExpandedId((current) => (current === repoId ? null : repoId));
-  }
 
   const installedUrls = useMemo(() => repos.map((r) => r.url), [repos]);
 
@@ -101,7 +94,6 @@ export default function Repositories({ onReposChange }: RepositoriesProps) {
     try {
       const { repo, bootstrap } = await api.addRepo(url.trim(), ref.trim() || "main");
       setRepos((prev) => [...prev, repo]);
-      setExpandedId(repo.id);
       setUrl("");
       setMessage(formatAddRepoMessage(repo.url, bootstrap));
       onReposChange?.();
@@ -153,7 +145,6 @@ export default function Repositories({ onReposChange }: RepositoriesProps) {
     try {
       const { repo, bootstrap } = await api.addRepo(known.url, known.ref, known.id);
       setRepos((prev) => [...prev, repo]);
-      setExpandedId(repo.id);
       setMessage(formatAddRepoMessage(known.name, bootstrap));
       onReposChange?.();
     } catch (err) {
@@ -188,9 +179,6 @@ export default function Repositories({ onReposChange }: RepositoriesProps) {
     try {
       await api.deleteRepo(repoId);
       setRepos((prev) => prev.filter((r) => r.id !== repoId));
-      if (expandedId === repoId) {
-        setExpandedId(null);
-      }
       onReposChange?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -215,7 +203,6 @@ export default function Repositories({ onReposChange }: RepositoriesProps) {
             {primarySuggested && (
               <SuggestedRepoCard
                 repo={primarySuggested}
-                primary
                 loading={loading}
                 onAdd={() => handleAddKnown(primarySuggested)}
               />
@@ -257,7 +244,7 @@ export default function Repositories({ onReposChange }: RepositoriesProps) {
       )}
 
       <Stack gap="md">
-        <Title order={4}>Your repositories</Title>
+        <Title order={4}>Connected repositories</Title>
         {repos.length === 0 ? (
           <Text c="dimmed">
             No repositories yet. Pick a catalog above or add a custom URL.
@@ -267,9 +254,7 @@ export default function Repositories({ onReposChange }: RepositoriesProps) {
             <InstalledRepoCard
               key={repo.id}
               repo={repo}
-              expanded={expandedId === repo.id}
               loading={loading}
-              onToggle={() => toggleExpanded(repo.id)}
               onPull={() => handlePull(repo.id)}
               onCheckUpdates={() => handleCheckUpdates(repo.id)}
               onBootstrap={() => handleBootstrap(repo.id)}
@@ -278,13 +263,6 @@ export default function Repositories({ onReposChange }: RepositoriesProps) {
           ))
         )}
       </Stack>
-
-      {expandedRepo && (
-        <Text size="sm" c="dimmed">
-          Selected: <Text span fw={600}>{expandedRepo.id}</Text>. Use Skills or
-          Agents to install from this repo.
-        </Text>
-      )}
     </Stack>
   );
 }

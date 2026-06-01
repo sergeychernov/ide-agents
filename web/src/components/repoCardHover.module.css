@@ -1,0 +1,46 @@
+.card {
+  cursor: pointer;
+  transition:
+    box-shadow 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease;
+}
+
+.card:hover,
+.card:focus-within,
+.card.pinned {
+  box-shadow: var(--mantine-shadow-sm);
+  border-color: var(--mantine-color-blue-outline);
+  background: var(--mantine-color-blue-light);
+}
+
+.collapsedMeta {
+  flex-shrink: 0;
+}
+
+.card:hover .collapsedMeta,
+.card:focus-within .collapsedMeta,
+.card.pinned .collapsedMeta {
+  display: none;
+}
+
+.hoverDetails {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 200ms ease,
+    opacity 150ms ease;
+}
+
+.card:hover .hoverDetails,
+.card:focus-within .hoverDetails,
+.card.pinned .hoverDetails {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.hoverDetailsInner {
+  min-height: 0;
+  overflow: hidden;
+}

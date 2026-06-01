@@ -7,6 +7,10 @@ import Settings from "./pages/Settings";
 import Repositories from "./pages/Repositories";
 import Skills from "./pages/Skills";
 import Agents from "./pages/Agents";
+import RepoUrlLine from "./components/RepoUrlLine";
+import headerClasses from "./components/repoCardHeader.module.css";
+
+const IDE_AGENTS_GITHUB_URL = "https://github.com/sergeychernov/ide-agents";
 
 interface NavCatalog {
   skills: boolean;
@@ -118,9 +122,12 @@ export default function App() {
         <Group h="100%" px="md" justify="space-between">
           <Group>
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <Title order={3} size="h4">
-              ide-agents
-            </Title>
+            <div className={headerClasses.repoTitleRow}>
+              <Title order={3} size="h4" style={{ flexShrink: 0 }}>
+                ide-agents
+              </Title>
+              <RepoUrlLine url={IDE_AGENTS_GITHUB_URL} />
+            </div>
           </Group>
           <Group gap="xs" visibleFrom="sm">
             <NavItems catalog={catalog} />

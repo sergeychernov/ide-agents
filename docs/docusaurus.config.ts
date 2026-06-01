@@ -54,8 +54,7 @@ const config: Config = {
           label: 'Docs',
         },
         {
-          href: 'https://github.com/sergeychernov/ide-agents',
-          label: 'GitHub',
+          type: 'custom-githubRepoBadge',
           position: 'right',
         },
         {

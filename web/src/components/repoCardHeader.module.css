@@ -1,0 +1,21 @@
+.repoTitleRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+@media (min-width: 48em) {
+  .repoTitleRow {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--mantine-spacing-xs);
+    flex-wrap: wrap;
+  }
+
+  .repoUrlWrap {
+    min-width: 0;
+    overflow: hidden;
+  }
+}
