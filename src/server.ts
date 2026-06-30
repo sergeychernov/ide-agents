@@ -78,7 +78,7 @@ export async function createServer(options: ServerOptions) {
       return reply.status(400).send({ error: "ides is required" });
     }
 
-    for (const key of ["cursor", "claude", "codex"] as const) {
+    for (const key of ["cursor", "claude", "codex", "opencode"] as const) {
       const entry = ides[key];
       if (!entry || typeof entry.configPath !== "string" || !entry.configPath.trim()) {
         return reply.status(400).send({ error: `Invalid config for ${key}` });
@@ -98,12 +98,17 @@ export async function createServer(options: ServerOptions) {
         enabled: Boolean(ides.codex.enabled),
         configPath: expandUserPath(ides.codex.configPath),
       },
+      opencode: {
+        enabled: Boolean(ides.opencode.enabled),
+        configPath: expandUserPath(ides.opencode.configPath),
+      },
     };
 
     if (
       !normalized.cursor.enabled &&
       !normalized.claude.enabled &&
-      !normalized.codex.enabled
+      !normalized.codex.enabled &&
+      !normalized.opencode.enabled
     ) {
       return reply.status(400).send({ error: "At least one IDE must be enabled" });
     }

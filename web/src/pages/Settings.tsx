@@ -18,6 +18,7 @@ import { api, type IdeId, type IdesConfig, type NpmUpdateInfo } from "../api/cli
 import { toDisplayPath } from "../pathDisplay";
 
 const IDE_ROWS: { id: IdeId; label: string }[] = [
+  { id: "opencode", label: "OpenCode" },
   { id: "codex", label: "Codex" },
   { id: "claude", label: "Claude" },
   { id: "cursor", label: "Cursor" },
@@ -71,9 +72,7 @@ export default function Settings() {
       ...ides,
       [id]: { ...ides[id], ...patch },
     };
-    const enabledCount = (["cursor", "claude", "codex"] as const).filter(
-      (key) => next[key].enabled,
-    ).length;
+    const enabledCount = IDE_ROWS.filter(({ id: key }) => next[key].enabled).length;
     if (enabledCount === 0) {
       setError("At least one IDE must be enabled");
       return;

@@ -20,7 +20,7 @@ const features = [
   {
     id: 'skills',
     title: 'Install skills with symlinks',
-    body: 'Toggle Global or Project per skill — no copy-paste into ~/.cursor/skills. Updates flow from git pull + Apply; non-symlink targets are never overwritten.',
+    body: 'Toggle Global or Project per skill — no copy-paste into tool-specific skills folders. Updates flow from git pull + Apply; non-symlink targets are never overwritten.',
     image: '/img/ui/skills.png',
     imageAlt: 'Skills page with global and project install toggles',
     reverse: true,
@@ -28,13 +28,13 @@ const features = [
   {
     id: 'agents',
     title: 'Same flow for subagents',
-    body: 'Agents from git install to ~/.cursor/agents (or project .cursor/agents). Dependent skills can be enforced so orchestrators always ship with their scripts.',
+    body: 'Agents from git install to each enabled tool\'s agents folder, globally or per project. Dependent skills can be enforced so orchestrators always ship with their scripts.',
     image: '/img/ui/agents.png',
     imageAlt: 'Agents page listing subagents from connected repositories',
   },
   {
     id: 'settings',
-    title: 'Cursor, Claude Code, and Codex',
+    title: 'OpenCode, Cursor, Claude Code, and Codex',
     body: 'Enable only the tools you use, set config paths, and apply installs to every enabled IDE adapter in one click.',
     image: '/img/ui/settings.png',
     imageAlt: 'Settings page with IDE toggles and config paths',
@@ -70,7 +70,7 @@ export default function Home() {
   return (
     <Layout
       title="ide-agents — IDE skills from git"
-      description="Local admin for Cursor, Claude Code, and Codex: clone skill repos, symlink installs, one UI.">
+      description="Local admin for OpenCode, Cursor, Claude Code, and Codex: clone skill repos, symlink installs, one UI.">
       <header className={styles.hero}>
         <div className="container">
           <p className={styles.eyebrow}>Local-first · macOS & Linux · MIT</p>
@@ -81,8 +81,8 @@ export default function Home() {
           <p className={styles.heroLead}>
             <strong>ide-agents</strong> is a small CLI + browser UI that clones git
             catalogs, scans SKILL.md and agents, and installs via{' '}
-            <strong>symlinks</strong> into Cursor, Claude Code, and Codex — global or
-            per project.
+            <strong>symlinks</strong> into OpenCode, Cursor, Claude Code, and Codex —
+            global or per project.
           </p>
           <div className={styles.heroCtas}>
             <a

@@ -7,6 +7,7 @@ const LAYOUTS = {
   cursor: { id: "cursor" as const, projectDir: ".cursor" },
   claude: { id: "claude" as const, projectDir: ".claude" },
   codex: { id: "codex" as const, projectDir: ".agents" },
+  opencode: { id: "opencode" as const, projectDir: ".opencode" },
 } as const;
 
 export function getAdapter(ideId: IdeId, configPath: string): Adapter {

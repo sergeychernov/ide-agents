@@ -1,6 +1,6 @@
 # Skills & agents catalog
 
-A git repository of **IDE skills** and **agents** for Cursor, Claude Code, and Codex.
+A git repository of **IDE skills** and **agents** for OpenCode, Cursor, Claude Code, and Codex.
 
 Managed with [ide-agents](https://github.com/sergeychernov/ide-agents) — clone this repo in the UI, then install artifacts globally or per project.
 
@@ -49,7 +49,7 @@ together with the agent and blocks removing a skill while a dependent agent stay
 installed. Standalone agents omit `skills`; do not use inline arrays such as
 `skills: []` or `skills: [related-skill]`.
 
-`name` must match the filename stem (`agents/oracle.md` → `name: oracle`). Subagents install to `~/.cursor/agents/<name>.md` (or project `.cursor/agents/`); invoke in Agent mode by name, not via the `/` skill menu.
+`name` must match the filename stem (`agents/oracle.md` → `name: oracle`). Subagents install to each enabled tool's `agents/` directory; invoke in Agent mode by name, not via the `/` skill menu.
 
 ## Sample artifacts
 
