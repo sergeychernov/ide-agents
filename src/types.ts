@@ -1,6 +1,6 @@
 export type ArtifactKind = "skill" | "agent";
 export type ArtifactAllowedScope = "global" | "project" | "any";
-export type IdeId = "cursor" | "claude" | "codex";
+export type IdeId = "cursor" | "claude" | "codex" | "opencode";
 /** @deprecated use IdeId */
 export type AdapterId = IdeId;
 
@@ -13,6 +13,7 @@ export interface IdesConfig {
   cursor: IdeToolConfig;
   claude: IdeToolConfig;
   codex: IdeToolConfig;
+  opencode: IdeToolConfig;
 }
 
 export interface ServerConfig {

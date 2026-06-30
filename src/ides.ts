@@ -16,11 +16,13 @@ export function getDefaultIdes(): IdesConfig {
   const cursorPath = path.join(home, ".cursor");
   const claudePath = path.join(home, ".claude");
   const codexPath = path.join(home, ".codex");
+  const opencodePath = path.join(home, ".config", "opencode");
 
   return {
     cursor: { enabled: homeDirExists(cursorPath), configPath: cursorPath },
     claude: { enabled: homeDirExists(claudePath), configPath: claudePath },
     codex: { enabled: homeDirExists(codexPath), configPath: codexPath },
+    opencode: { enabled: homeDirExists(opencodePath), configPath: opencodePath },
   };
 }
 
@@ -28,6 +30,7 @@ export function defaultAdapterFromIdes(ides: IdesConfig): AdapterId {
   if (ides.cursor.enabled) return "cursor";
   if (ides.claude.enabled) return "claude";
   if (ides.codex.enabled) return "codex";
+  if (ides.opencode.enabled) return "opencode";
   return "cursor";
 }
 
@@ -43,6 +46,7 @@ export function migrateIdesConfig(
     cursor: { ...defaults.cursor, ...parsed.ides.cursor },
     claude: { ...defaults.claude, ...parsed.ides.claude },
     codex: { ...defaults.codex, ...parsed.ides.codex },
+    opencode: { ...defaults.opencode, ...parsed.ides.opencode },
   };
 }
 
@@ -51,5 +55,6 @@ export function getEnabledIdeIds(config: IdeAgentsConfig): IdeId[] {
   if (config.ides.cursor.enabled) ids.push("cursor");
   if (config.ides.claude.enabled) ids.push("claude");
   if (config.ides.codex.enabled) ids.push("codex");
+  if (config.ides.opencode.enabled) ids.push("opencode");
   return ids;
 }

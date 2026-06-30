@@ -1,6 +1,6 @@
 # ide-agents
 
-Local admin for **IDE agents and skills** from any git repository — **Cursor**, **Claude Code**, and **Codex** (enable in Settings).
+Local admin for **IDE agents and skills** from any git repository — **OpenCode**, **Cursor**, **Claude Code**, and **Codex** (enable in Settings).
 
 Install skills and subagents into your IDE via symlinks — no copy-paste, no manual path juggling.
 
@@ -62,7 +62,7 @@ ide-agents --no-open      # do not open browser
 
 ## Settings
 
-Open **Settings** (`/settings`) and enable the tools you use (Codex, Claude, Cursor). Set each **config path** (defaults: `~/.codex`, `~/.claude`, `~/.cursor`).
+Open **Settings** (`/settings`) and enable the tools you use (OpenCode, Codex, Claude, Cursor). Set each **config path** (defaults: `~/.config/opencode`, `~/.codex`, `~/.claude`, `~/.cursor`).
 
 On first run, a tool is enabled only if its default folder already exists in your home directory. You can change paths and toggles anytime; installs apply to all enabled tools.
 
@@ -96,11 +96,12 @@ Private repos: configure SSH or `gh` auth yourself — ide-agents does not store
 2. Select a repository
 3. Click **Global** (🌐) or **Project** (📁) on a card — symlinks apply immediately
 
-| Tool   | Global (default config path) | Project subfolder |
-|--------|------------------------------|-------------------|
-| Cursor | `~/.cursor/`                 | `.cursor`         |
-| Claude | `~/.claude/`                 | `.claude`         |
-| Codex  | `~/.codex/`                  | `.agents`         |
+| Tool     | Global (default config path) | Project subfolder |
+|----------|------------------------------|-------------------|
+| OpenCode | `~/.config/opencode/`        | `.opencode`       |
+| Cursor   | `~/.cursor/`                 | `.cursor`         |
+| Claude   | `~/.claude/`                 | `.claude`         |
+| Codex    | `~/.codex/`                  | `.agents`         |
 
 Global paths use your configured **config path** per tool. Project path is the directory where you started `ide-agents`.
 

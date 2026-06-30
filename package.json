@@ -1,6 +1,6 @@
 {
   "name": "ide-agents",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "description": "Local admin for IDE agents and skills from git repos",
   "type": "module",
   "bin": {
@@ -37,6 +37,7 @@
   },
   "keywords": [
     "ide-agents",
+    "opencode",
     "cursor",
     "skills",
     "agents",
