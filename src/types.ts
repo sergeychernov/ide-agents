@@ -1,20 +1,32 @@
-export type ArtifactKind = "skill" | "agent";
-export type ArtifactAllowedScope = "global" | "project" | "any";
-export type IdeId = "cursor" | "claude" | "codex" | "opencode";
+import type {
+  ApplyResultItem,
+  IdeId,
+  IdesConfig,
+  Installation,
+} from "./shared/api-types.js";
+
+export type {
+  ApplyResultItem,
+  Artifact,
+  ArtifactAllowedScope,
+  ArtifactKind,
+  ArtifactTargets,
+  CodexSkillMeta,
+  GitStatus,
+  IdeId,
+  IdeToolConfig,
+  IdesConfig,
+  Installation,
+  NpmUpdateInfo,
+  RepoBootstrap,
+  RepoWithStatus,
+  SkillDependency,
+  SkillLayout,
+  TargetStatus,
+} from "./shared/api-types.js";
+
 /** @deprecated use IdeId */
 export type AdapterId = IdeId;
-
-export interface IdeToolConfig {
-  enabled: boolean;
-  configPath: string;
-}
-
-export interface IdesConfig {
-  cursor: IdeToolConfig;
-  claude: IdeToolConfig;
-  codex: IdeToolConfig;
-  opencode: IdeToolConfig;
-}
 
 export interface ServerConfig {
   port: number;
@@ -25,18 +37,6 @@ export interface RepoConfig {
   url: string;
   ref: string;
   slug: string;
-}
-
-export interface Installation {
-  id: string;
-  repoId: string;
-  kind: ArtifactKind;
-  artifactId: string;
-  sourcePath: string;
-  targetName: string;
-  global: boolean;
-  project: boolean;
-  projectPath: string | null;
 }
 
 export interface IdeAgentsConfig {
@@ -52,58 +52,6 @@ export interface IdeAgentsConfig {
 
 /** @deprecated renamed to IdeAgentsConfig */
 export type AgentDeskConfig = IdeAgentsConfig;
-
-export interface TargetStatus {
-  exists: boolean;
-  isSymlink: boolean;
-  blocked: boolean;
-}
-
-export interface ArtifactTargets {
-  global: TargetStatus;
-  project: TargetStatus | null;
-}
-
-export interface SkillDependency {
-  id: string;
-  name: string;
-  description: string;
-}
-
-export interface Artifact {
-  id: string;
-  kind: ArtifactKind;
-  sourcePath: string;
-  name: string;
-  description: string;
-  hasSkillMd?: boolean;
-  allowedScope: ArtifactAllowedScope | null;
-  dependsOnSkills?: string[];
-  skillDependencies?: SkillDependency[];
-  targets?: ArtifactTargets;
-}
-
-export interface GitStatus {
-  branch: string | null;
-  sha: string | null;
-  dirty: boolean;
-  behind: number | null;
-  ahead: number | null;
-  error?: string;
-}
-
-export interface RepoWithStatus extends RepoConfig {
-  localPath: string;
-  git: GitStatus;
-  skillCount: number;
-  agentCount: number;
-}
-
-export interface ApplyResultItem {
-  path: string;
-  action: "created" | "removed" | "skipped";
-  error?: string;
-}
 
 export interface ApplyResult {
   results: ApplyResultItem[];

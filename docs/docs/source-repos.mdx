@@ -32,7 +32,35 @@ my-skills-repo/
     └── my-agent.md
 ```
 
-Only immediate child directories that contain `SKILL.md` are treated as skills.
+**Bucketed** (auto-detected when `skills/` groups skills under top-level buckets — often dot-prefixed), e.g. [openai/skills](https://github.com/openai/skills):
+
+```
+my-skills-repo/
+└── skills/
+    ├── .curated/
+    │   └── gh-fix-ci/
+    │       └── SKILL.md
+    └── .system/
+        └── skill-creator/
+            └── SKILL.md
+```
+
+Skill `id` is the innermost folder name (`gh-fix-ci`), so the symlink stays flat (`~/.cursor/skills/gh-fix-ci`). On id collisions across buckets, `.curated` wins over `.experimental` over other buckets over `.system`.
+
+Only immediate child directories that contain `SKILL.md` are treated as skills. Detection order is **nested → bucketed → flat**; the detected layout is shown as a badge on each repository card.
+
+### Codex plugin metadata
+
+When a skill directory contains `agents/openai.yaml` (openai/skills convention), ide-agents reads its `interface` block for presentation only:
+
+| YAML field | Shown in UI |
+|------------|-------------|
+| `display_name` | Card title (falls back to `name`) |
+| `short_description` | Description (falls back to SKILL.md, then `metadata.short-description`) |
+| `default_prompt` | "Suggested prompt" block |
+| `icon_large` / `icon_small` | Reserved for future icon rendering |
+
+This file is **not** an ide-agents agent — it is metadata for the skill and is never installed as a separate `agents/<name>.md`.
 
 ## SKILL.md frontmatter
 

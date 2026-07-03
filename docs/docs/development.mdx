@@ -27,9 +27,9 @@ npm install
 | `npm run docs:build` | Build documentation site |
 | `npm run lint` | ESLint (`src/`, `web/`, `template/**/*.mjs`) |
 | `npm run lint:fix` | ESLint with autofix |
-| `npm test` | Vitest (web + server) |
-| `npm run test:web` | UI / install logic tests |
-| `npm run test:server` | Backend apply/installations tests |
+| `npm test` | Vitest (web + server projects) |
+| `npm run test:web` | UI / client tests (`web/src/**/*.test.ts`) |
+| `npm run test:server` | Backend tests (`src/**/*.test.ts` — apply, scan layouts, installations) |
 
 ## Project structure
 
@@ -42,6 +42,8 @@ TypeScript, ESM (`NodeNext`), compiled to `dist/`. Entry: `dist/cli.js`, bin: `i
 ### Web (`web/`)
 
 Vite + React + Mantine. Built to `web/dist/`, served by Fastify in production.
+
+API DTOs are imported from `src/shared/api-types.ts` via the `@shared/*` path alias (`import type` only — no runtime coupling). The backend re-exports these types from `src/types.ts`.
 
 ### Docs (`docs/`)
 

@@ -15,28 +15,48 @@
       "path": "/repositories",
       "title": "Repositories",
       "fullPage": false,
-      "actions": [{ "waitForSelector": "main", "timeoutMs": 15000 }]
+      "actions": [
+        { "waitForSelector": "text=Connected repositories", "timeoutMs": 15000 }
+      ]
     },
     {
       "id": "settings",
       "path": "/settings",
       "title": "Settings",
       "fullPage": false,
-      "actions": [{ "waitForSelector": "main", "timeoutMs": 15000 }]
+      "actions": [{ "waitForSelector": "text=What do you use?", "timeoutMs": 15000 }]
     },
     {
       "id": "skills",
-      "path": "/skills",
+      "path": "/repositories",
       "title": "Skills",
       "fullPage": false,
-      "actions": [{ "waitForSelector": "main", "timeoutMs": 15000 }]
+      "actions": [
+        { "waitForSelector": "text=Connected repositories", "timeoutMs": 15000 },
+        { "waitMs": 800 },
+        { "click": "header a[href='/skills']" },
+        { "waitForSelector": "h2 >> text=Skills", "timeoutMs": 15000 },
+        { "click": "input[aria-haspopup='listbox']" },
+        { "waitMs": 300 },
+        { "click": "[role='option']:has-text('openai-skills')" },
+        { "waitForSelector": "h4:has-text('ASP.NET Core')", "timeoutMs": 30000 }
+      ]
     },
     {
       "id": "agents",
-      "path": "/agents",
+      "path": "/repositories",
       "title": "Agents",
       "fullPage": false,
-      "actions": [{ "waitForSelector": "main", "timeoutMs": 15000 }]
+      "actions": [
+        { "waitForSelector": "text=Connected repositories", "timeoutMs": 15000 },
+        { "waitMs": 800 },
+        { "click": "header a[href='/agents']" },
+        { "waitForSelector": "h2 >> text=Agents", "timeoutMs": 15000 },
+        { "click": "input[aria-haspopup='listbox']" },
+        { "waitMs": 300 },
+        { "click": "[role='option']:has-text('article-writing-kit')" },
+        { "waitForSelector": "h4:has-text('article-architect')", "timeoutMs": 20000 }
+      ]
     }
   ]
 }

@@ -13,10 +13,10 @@ Default port: **3921** (CLI uses the next free port if busy)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/status` | Server info, `ides`, `defaultProjectPath`, `version` |
-| `GET` | `/settings` | `ides`, folder-based defaults, `home`, `version` |
+| `GET` | `/status` | Server info, `ides`, `defaultProjectPath`, `version`, `npmUpdate` |
+| `GET` | `/settings` | `ides`, folder-based defaults, `home`, `version`, `npmUpdate` |
 | `PUT` | `/settings` | Update `ides` (then re-apply from UI) |
-| `GET` | `/repos` | List repos with git status and skill/agent counts |
+| `GET` | `/repos` | List repos with git status, skill/agent counts, and `skillLayout` |
 | `POST` | `/repos` | Clone repo `{ url, ref?, id? }`; bootstraps empty clones |
 | `DELETE` | `/repos/:id` | Remove repo from config |
 | `POST` | `/repos/:id/bootstrap` | Apply starter template to an empty repo |
@@ -44,7 +44,13 @@ curl http://127.0.0.1:3921/api/status
 {
   "home": "/Users/me/.ide-agents",
   "port": 3921,
-  "version": "0.3.0",
+  "version": "0.7.0",
+  "npmUpdate": {
+    "current": "0.7.0",
+    "latest": "0.7.0",
+    "updateAvailable": false,
+    "installCommand": "npm update -g ide-agents"
+  },
   "defaultProjectPath": "/Users/me/code/my-app",
   "ides": {
     "opencode": { "enabled": true, "configPath": "/Users/me/.config/opencode" },
@@ -103,13 +109,15 @@ curl -X POST http://127.0.0.1:3921/api/repos \
     "localPath": "/Users/me/.ide-agents/repos/github-com-you-empty-skills",
     "skillCount": 1,
     "agentCount": 1,
+    "skillLayout": "nested",
     "git": { "branch": "main", "sha": "abc123", "dirty": false, "behind": 0, "ahead": 1 }
   },
   "bootstrap": {
     "applied": true,
     "pushed": true,
     "skillCount": 1,
-    "agentCount": 1
+    "agentCount": 1,
+    "skillLayout": "nested"
   }
 }
 ```
@@ -123,6 +131,39 @@ curl -X POST http://127.0.0.1:3921/api/repos/my-repo/bootstrap
 ```
 
 Returns `{ repo, bootstrap }` on success. HTTP **409** if the repo is not empty (`Repository is not empty — bootstrap skipped`).
+
+### Artifacts
+
+```bash
+curl 'http://127.0.0.1:3921/api/repos/main/artifacts?projectPath=/Users/me/code/my-app'
+```
+
+```json
+{
+  "artifacts": [
+    {
+      "id": "gh-fix-ci",
+      "kind": "skill",
+      "sourcePath": "skills/.curated/gh-fix-ci",
+      "name": "gh-fix-ci",
+      "description": "Fix failing GitHub Actions workflows.",
+      "allowedScope": "any",
+      "bucket": ".curated",
+      "codexMeta": {
+        "displayName": "GitHub Fix CI",
+        "shortDescription": "Fix failing GitHub Actions workflows.",
+        "defaultPrompt": "Fix the CI failure in this repo."
+      },
+      "targets": {
+        "global": { "exists": false, "isSymlink": false, "blocked": false },
+        "project": { "exists": true, "isSymlink": true, "blocked": false }
+      }
+    }
+  ]
+}
+```
+
+Optional fields: `bucket` (bucketed layouts), `codexMeta` (from `agents/openai.yaml`), `dependsOnSkills` / `skillDependencies` (agents). See [Data model](/docs/data-model#artifact-scanned-not-persisted).
 
 ### Installations
 

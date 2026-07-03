@@ -18,7 +18,7 @@ import {
   findRemovedInstallations,
   removeInstallationSymlinks,
 } from "./apply.js";
-import { scanRepoArtifacts } from "./scan.js";
+import { scanRepo, scanRepoArtifacts } from "./scan.js";
 import { getArtifactTargets } from "./targets.js";
 import {
   expandUserPath,
@@ -127,13 +127,14 @@ export async function createServer(options: ServerOptions) {
     for (const repo of config.repos) {
       const git = await getGitStatusWithoutFetch(repo.slug, repo.ref);
       const repoPath = getRepoPath(repo.slug);
-      const artifacts = await scanRepoArtifacts(repoPath);
+      const { artifacts, skillLayout } = await scanRepo(repoPath);
       repos.push({
         ...repo,
         localPath: repoPath,
         git,
         skillCount: artifacts.filter((a) => a.kind === "skill").length,
         agentCount: artifacts.filter((a) => a.kind === "agent").length,
+        skillLayout,
       });
     }
 
@@ -179,6 +180,7 @@ export async function createServer(options: ServerOptions) {
           git,
           skillCount: bootstrap.skillCount,
           agentCount: bootstrap.agentCount,
+          skillLayout: bootstrap.skillLayout,
         },
         bootstrap,
       };
@@ -229,6 +231,7 @@ export async function createServer(options: ServerOptions) {
             git,
             skillCount: bootstrap.skillCount,
             agentCount: bootstrap.agentCount,
+            skillLayout: bootstrap.skillLayout,
           },
           bootstrap,
         };

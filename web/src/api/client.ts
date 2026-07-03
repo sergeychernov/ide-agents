@@ -1,101 +1,35 @@
-export type ArtifactKind = "skill" | "agent";
-export type ArtifactAllowedScope = "global" | "project" | "any";
-export type IdeId = "cursor" | "claude" | "codex" | "opencode";
+import type {
+  Artifact,
+  ApplyResultItem,
+  GitStatus,
+  IdesConfig,
+  Installation,
+  NpmUpdateInfo,
+  RepoBootstrap,
+  RepoWithStatus,
+} from "@shared/api-types";
 
-export interface IdeToolConfig {
-  enabled: boolean;
-  configPath: string;
-}
+export type {
+  ApplyResultItem,
+  Artifact,
+  ArtifactAllowedScope,
+  ArtifactKind,
+  ArtifactTargets,
+  CodexSkillMeta,
+  GitStatus,
+  IdeId,
+  IdeToolConfig,
+  IdesConfig,
+  Installation,
+  NpmUpdateInfo,
+  RepoBootstrap,
+  SkillDependency,
+  SkillLayout,
+  TargetStatus,
+} from "@shared/api-types";
 
-export interface IdesConfig {
-  cursor: IdeToolConfig;
-  claude: IdeToolConfig;
-  codex: IdeToolConfig;
-  opencode: IdeToolConfig;
-}
-
-export interface NpmUpdateInfo {
-  current: string;
-  latest: string | null;
-  updateAvailable: boolean;
-  installCommand: string;
-}
-
-export interface GitStatus {
-  branch: string | null;
-  sha: string | null;
-  dirty: boolean;
-  behind: number | null;
-  ahead: number | null;
-  error?: string;
-}
-
-export interface RepoBootstrap {
-  applied: boolean;
-  pushed: boolean;
-  pushError?: string;
-  skillCount: number;
-  agentCount: number;
-}
-
-export interface Repo {
-  id: string;
-  url: string;
-  ref: string;
-  slug: string;
-  localPath: string;
-  git: GitStatus;
-  skillCount: number;
-  agentCount: number;
-}
-
-export interface TargetStatus {
-  exists: boolean;
-  isSymlink: boolean;
-  blocked: boolean;
-}
-
-export interface ArtifactTargets {
-  global: TargetStatus;
-  project: TargetStatus | null;
-}
-
-export interface SkillDependency {
-  id: string;
-  name: string;
-  description: string;
-}
-
-export interface Artifact {
-  id: string;
-  kind: ArtifactKind;
-  sourcePath: string;
-  name: string;
-  description: string;
-  hasSkillMd?: boolean;
-  allowedScope: ArtifactAllowedScope | null;
-  dependsOnSkills?: string[];
-  skillDependencies?: SkillDependency[];
-  targets?: ArtifactTargets;
-}
-
-export interface Installation {
-  id: string;
-  repoId: string;
-  kind: ArtifactKind;
-  artifactId: string;
-  sourcePath: string;
-  targetName: string;
-  global: boolean;
-  project: boolean;
-  projectPath: string | null;
-}
-
-export interface ApplyResultItem {
-  path: string;
-  action: "created" | "removed" | "skipped";
-  error?: string;
-}
+/** A configured repository enriched with git status and scan results. */
+export type Repo = RepoWithStatus;
 
 async function request<T>(
   path: string,

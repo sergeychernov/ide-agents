@@ -1,7 +1,13 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import matter from "gray-matter";
-import type { Artifact, ArtifactAllowedScope } from "./types.js";
+import { parse as parseYaml } from "yaml";
+import type {
+  Artifact,
+  ArtifactAllowedScope,
+  CodexSkillMeta,
+  SkillLayout,
+} from "./types.js";
 
 async function pathExists(filePath: string): Promise<boolean> {
   try {
@@ -57,12 +63,73 @@ function parseAgentDescription(content: string, fallbackName: string): string {
   return fallbackName;
 }
 
+/** Read `metadata.short-description` from SKILL.md frontmatter, if present. */
+function parseMetadataShortDescription(
+  data: Record<string, unknown>,
+): string | undefined {
+  const metadata = data.metadata;
+  if (!metadata || typeof metadata !== "object") {
+    return undefined;
+  }
+  const value = (metadata as Record<string, unknown>)["short-description"];
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function optionalString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+/**
+ * Parse Codex plugin metadata from a skill's `agents/openai.yaml`. Returns
+ * undefined when the file is missing, unparseable, or has no useful fields.
+ */
+async function parseCodexSkillMeta(
+  skillDir: string,
+): Promise<CodexSkillMeta | undefined> {
+  const yamlPath = path.join(skillDir, "agents", "openai.yaml");
+  if (!(await pathExists(yamlPath))) {
+    return undefined;
+  }
+
+  let doc: unknown;
+  try {
+    doc = parseYaml(await readFile(yamlPath, "utf8"));
+  } catch {
+    return undefined;
+  }
+
+  if (!doc || typeof doc !== "object") {
+    return undefined;
+  }
+
+  const iface = (doc as Record<string, unknown>).interface;
+  if (!iface || typeof iface !== "object") {
+    return undefined;
+  }
+
+  const record = iface as Record<string, unknown>;
+  const meta: CodexSkillMeta = {};
+  const displayName = optionalString(record.display_name);
+  const shortDescription = optionalString(record.short_description);
+  const defaultPrompt = optionalString(record.default_prompt);
+  const iconPath =
+    optionalString(record.icon_large) ?? optionalString(record.icon_small);
+
+  if (displayName) meta.displayName = displayName;
+  if (shortDescription) meta.shortDescription = shortDescription;
+  if (defaultPrompt) meta.defaultPrompt = defaultPrompt;
+  if (iconPath) meta.iconPath = iconPath;
+
+  return Object.keys(meta).length > 0 ? meta : undefined;
+}
+
 interface ParsedSkillDir {
   id: string;
   name: string;
   description: string;
   hasSkillMd: boolean;
   allowedScope: ArtifactAllowedScope;
+  codexMeta?: CodexSkillMeta;
 }
 
 async function parseSkillDirectory(
@@ -79,21 +146,28 @@ async function parseSkillDirectory(
   if (hasSkillMd) {
     const raw = await readFile(skillMdPath, "utf8");
     const parsed = matter(raw);
-    if (typeof parsed.data.name === "string" && parsed.data.name.trim()) {
-      name = parsed.data.name.trim();
+    const data = parsed.data as Record<string, unknown>;
+    if (typeof data.name === "string" && data.name.trim()) {
+      name = data.name.trim();
     }
-    if (typeof parsed.data.description === "string") {
-      description = parsed.data.description.trim();
+    if (typeof data.description === "string") {
+      description = data.description.trim();
     }
-    allowedScope = parseAllowedScope(parsed.data as Record<string, unknown>);
+    if (!description) {
+      description = parseMetadataShortDescription(data) ?? "";
+    }
+    allowedScope = parseAllowedScope(data);
   }
 
-  return { id: dirName, name, description, hasSkillMd, allowedScope };
+  const codexMeta = await parseCodexSkillMeta(skillDir);
+
+  return { id: dirName, name, description, hasSkillMd, allowedScope, codexMeta };
 }
 
 function toSkillArtifact(
   sourcePath: string,
   parsed: ParsedSkillDir,
+  bucket?: string,
 ): Artifact {
   return {
     id: parsed.id,
@@ -103,12 +177,15 @@ function toSkillArtifact(
     description: parsed.description,
     hasSkillMd: parsed.hasSkillMd,
     allowedScope: parsed.allowedScope,
+    ...(bucket ? { bucket } : {}),
+    ...(parsed.codexMeta ? { codexMeta: parsed.codexMeta } : {}),
   };
 }
 
 async function scanSkillsInDirectory(
   parentDir: string,
   sourcePathPrefix: string,
+  bucket?: string,
 ): Promise<Artifact[]> {
   if (!(await pathExists(parentDir))) {
     return [];
@@ -131,7 +208,7 @@ async function scanSkillsInDirectory(
     const relativeSource = sourcePathPrefix
       ? path.join(sourcePathPrefix, entry.name)
       : entry.name;
-    artifacts.push(toSkillArtifact(relativeSource, parsed));
+    artifacts.push(toSkillArtifact(relativeSource, parsed, bucket));
   }
 
   return artifacts.sort((a, b) => a.id.localeCompare(b.id));
@@ -146,12 +223,84 @@ async function scanSkillsFlat(repoPath: string): Promise<Artifact[]> {
   return scanSkillsInDirectory(repoPath, "");
 }
 
-async function scanSkills(repoPath: string): Promise<Artifact[]> {
+/**
+ * Bucket priority for id-collision resolution (lower rank wins). Repos like
+ * openai/skills group skills under `skills/.curated`, `skills/.system`, etc.
+ */
+const BUCKET_RANK: Record<string, number> = {
+  ".curated": 0,
+  ".experimental": 1,
+  ".system": 3,
+};
+
+function bucketRank(name: string): number {
+  return BUCKET_RANK[name] ?? 2;
+}
+
+/**
+ * Repos like openai/skills: `skills/<bucket>/<skill-name>/SKILL.md`, where
+ * `<bucket>` is a top-level folder under `skills/` (often dot-prefixed, e.g.
+ * `.curated`, `.system`). On id collisions across buckets the higher-priority
+ * bucket wins.
+ */
+async function scanSkillsBucketed(repoPath: string): Promise<Artifact[]> {
+  const skillsDir = path.join(repoPath, "skills");
+  if (!(await pathExists(skillsDir))) {
+    return [];
+  }
+
+  const entries = await readdir(skillsDir, { withFileTypes: true });
+  const buckets = entries
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort((a, b) => bucketRank(a) - bucketRank(b) || a.localeCompare(b));
+
+  const byId = new Map<string, Artifact>();
+  for (const bucket of buckets) {
+    const found = await scanSkillsInDirectory(
+      path.join(skillsDir, bucket),
+      path.join("skills", bucket),
+      bucket,
+    );
+    for (const artifact of found) {
+      if (!byId.has(artifact.id)) {
+        byId.set(artifact.id, artifact);
+      }
+    }
+  }
+
+  return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
+}
+
+interface SkillScanResult {
+  artifacts: Artifact[];
+  layout: SkillLayout;
+}
+
+/**
+ * Detect the repo skill layout and return the matching skills. Order matters:
+ * `nested` (direct `skills/<id>`) → `bucketed` (`skills/<bucket>/<id>`) → `flat`
+ * (`<id>` at root). Existing nested/flat repos keep their previous behavior.
+ */
+async function scanSkillsWithLayout(
+  repoPath: string,
+): Promise<SkillScanResult> {
   const nested = await scanSkillsNested(repoPath);
   if (nested.length > 0) {
-    return nested;
+    return { artifacts: nested, layout: "nested" };
   }
-  return scanSkillsFlat(repoPath);
+
+  const bucketed = await scanSkillsBucketed(repoPath);
+  if (bucketed.length > 0) {
+    return { artifacts: bucketed, layout: "bucketed" };
+  }
+
+  const flat = await scanSkillsFlat(repoPath);
+  if (flat.length > 0) {
+    return { artifacts: flat, layout: "flat" };
+  }
+
+  return { artifacts: [], layout: "empty" };
 }
 
 async function scanAgents(repoPath: string): Promise<Artifact[]> {
@@ -219,10 +368,22 @@ function enrichSkillDependencies(artifacts: Artifact[]): Artifact[] {
   });
 }
 
-export async function scanRepoArtifacts(repoPath: string): Promise<Artifact[]> {
+export interface RepoScanResult {
+  artifacts: Artifact[];
+  skillLayout: SkillLayout;
+}
+
+export async function scanRepo(repoPath: string): Promise<RepoScanResult> {
   const [skills, agents] = await Promise.all([
-    scanSkills(repoPath),
+    scanSkillsWithLayout(repoPath),
     scanAgents(repoPath),
   ]);
-  return enrichSkillDependencies([...skills, ...agents]);
+  return {
+    artifacts: enrichSkillDependencies([...skills.artifacts, ...agents]),
+    skillLayout: skills.layout,
+  };
+}
+
+export async function scanRepoArtifacts(repoPath: string): Promise<Artifact[]> {
+  return (await scanRepo(repoPath)).artifacts;
 }

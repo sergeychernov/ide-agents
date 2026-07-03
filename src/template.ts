@@ -2,7 +2,8 @@ import { cp, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { commitAndPushRepo } from "./git.js";
-import { scanRepoArtifacts } from "./scan.js";
+import { scanRepo, scanRepoArtifacts } from "./scan.js";
+import type { SkillLayout } from "./types.js";
 
 const GITHUB_INIT_FILES = new Set([
   "README.md",
@@ -18,6 +19,7 @@ export interface BootstrapResult {
   pushError?: string;
   skillCount: number;
   agentCount: number;
+  skillLayout: SkillLayout;
 }
 
 export function getTemplateDir(): string {
@@ -76,12 +78,13 @@ export async function bootstrapEmptyRepo(
   ref: string,
 ): Promise<BootstrapResult> {
   if (!(await isEmptySkillRepo(repoPath))) {
-    const artifacts = await scanRepoArtifacts(repoPath);
+    const { artifacts, skillLayout } = await scanRepo(repoPath);
     return {
       applied: false,
       pushed: false,
       skillCount: artifacts.filter((a) => a.kind === "skill").length,
       agentCount: artifacts.filter((a) => a.kind === "agent").length,
+      skillLayout,
     };
   }
 
@@ -96,12 +99,13 @@ export async function bootstrapEmptyRepo(
     pushError = err instanceof Error ? err.message : String(err);
   }
 
-  const artifacts = await scanRepoArtifacts(repoPath);
+  const { artifacts, skillLayout } = await scanRepo(repoPath);
   return {
     applied: true,
     pushed,
     pushError,
     skillCount: artifacts.filter((a) => a.kind === "skill").length,
     agentCount: artifacts.filter((a) => a.kind === "agent").length,
+    skillLayout,
   };
 }
