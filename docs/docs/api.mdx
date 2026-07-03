@@ -47,6 +47,7 @@ curl http://127.0.0.1:3921/api/status
   "version": "0.3.0",
   "defaultProjectPath": "/Users/me/code/my-app",
   "ides": {
+    "opencode": { "enabled": true, "configPath": "/Users/me/.config/opencode" },
     "cursor": { "enabled": true, "configPath": "/Users/me/.cursor" },
     "claude": { "enabled": false, "configPath": "/Users/me/.claude" },
     "codex": { "enabled": true, "configPath": "/Users/me/.codex" }
@@ -63,7 +64,7 @@ curl http://127.0.0.1:3921/api/settings
 ```bash
 curl -X PUT http://127.0.0.1:3921/api/settings \
   -H 'Content-Type: application/json' \
-  -d '{"ides":{"cursor":{"enabled":true,"configPath":"~/.cursor"},"claude":{"enabled":false,"configPath":"~/.claude"},"codex":{"enabled":true,"configPath":"~/.codex"}}}'
+  -d '{"ides":{"opencode":{"enabled":true,"configPath":"~/.config/opencode"},"cursor":{"enabled":true,"configPath":"~/.cursor"},"claude":{"enabled":false,"configPath":"~/.claude"},"codex":{"enabled":true,"configPath":"~/.codex"}}}'
 ```
 
 ### Apply

@@ -18,6 +18,7 @@ flowchart LR
   API --> Scan["scan.ts"]
   API --> Apply["apply.ts"]
   Apply --> Adapters["adapters/"]
+  Adapters --> OpenCode["~/.config/opencode"]
   Adapters --> Cursor["~/.cursor"]
   Adapters --> Claude["~/.claude"]
   Adapters --> Codex["~/.codex"]
@@ -80,6 +81,7 @@ Enabled tools come from [Settings](/docs/settings) (`config.ides`). `apply.ts` r
 
 | IDE | Config path (default) | Project subfolder |
 |-----|------------------------|-----------------|
+| OpenCode | `~/.config/opencode` | `.opencode` |
 | Cursor | `~/.cursor` | `.cursor` |
 | Claude | `~/.claude` | `.claude` |
 | Codex | `~/.codex` | `.agents` |

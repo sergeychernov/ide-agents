@@ -14,6 +14,7 @@ Stored at `~/.ide-agents/config.json`:
   "version": 1,
   "adapter": "cursor",
   "ides": {
+    "opencode": { "enabled": true, "configPath": "/Users/me/.config/opencode" },
     "cursor": { "enabled": true, "configPath": "/Users/me/.cursor" },
     "claude": { "enabled": true, "configPath": "/Users/me/.claude" },
     "codex": { "enabled": false, "configPath": "/Users/me/.codex" }
@@ -51,7 +52,7 @@ Per-tool settings — see [Settings & IDEs](/docs/settings).
 | Field | Description |
 |-------|-------------|
 | `enabled` | If true, `apply` creates symlinks for this tool |
-| `configPath` | Global config directory (default `~/.cursor`, `~/.claude`, or `~/.codex`) |
+| `configPath` | Global config directory (default `~/.config/opencode`, `~/.cursor`, `~/.claude`, or `~/.codex`) |
 
 On first config creation, `enabled` is set only when the matching directory already exists under `~`.
 

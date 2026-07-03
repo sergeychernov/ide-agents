@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "baseURL": "http://127.0.0.1:5173",
+  "baseURL": "http://localhost:5173",
   "server": {
     "command": "npm run dev",
     "cwd": ".",
-    "readyUrl": "http://127.0.0.1:5173/repositories",
+    "readyUrl": "http://localhost:5173/repositories",
     "readyTimeoutMs": 90000
   },
   "outputDir": "docs/static/img/ui",

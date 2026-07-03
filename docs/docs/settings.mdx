@@ -18,13 +18,16 @@ Skills and Agents pages install artifacts from a selected repository into every 
 
 On **Settings**, enable one or more tools:
 
+![Settings — enabled IDEs and config paths](/img/ui/settings.png)
+
 | Tool | Default config path | Enabled by default when |
 |------|---------------------|-------------------------|
+| **OpenCode** | `~/.config/opencode/` | Directory `~/.config/opencode` exists |
 | **Codex** | `~/.codex/` | Directory `~/.codex` exists |
 | **Claude** | `~/.claude/` | Directory `~/.claude` exists |
 | **Cursor** | `~/.cursor/` | Directory `~/.cursor` exists |
 
-Defaults are **not** “all on”. On first run (no `ides` block in `config.json`), ide-agents scans your home directory and checks only those three folders. Already saved settings in `config.json` are kept as-is.
+Defaults are **not** “all on”. On first run (no `ides` block in `config.json`), ide-agents scans your home directory and checks those four folders. Already saved settings in `config.json` are kept as-is.
 
 You can change paths (e.g. `~/custom/.cursor`). Tilde (`~`) is expanded on save. At least one tool must stay enabled.
 
@@ -36,12 +39,14 @@ Each tool uses its **config path** for global installs. Project installs use a s
 
 | Tool | Global skills | Global agents | Project subfolder |
 |------|---------------|---------------|-------------------|
+| **OpenCode** | `{configPath}/skills/<name>` | `{configPath}/agents/<name>.md` | `.opencode` |
 | **Cursor** | `{configPath}/skills/<name>` | `{configPath}/agents/<name>.md` | `.cursor` |
 | **Claude** | `{configPath}/skills/<name>` | `{configPath}/agents/<name>.md` | `.claude` |
 | **Codex** | `{configPath}/skills/<name>` | `{configPath}/agents/<name>.md` | `.agents` |
 
 Example with default paths and skill `tech-debt`:
 
+- OpenCode global: `~/.config/opencode/skills/tech-debt`
 - Cursor global: `~/.cursor/skills/tech-debt`
 - Claude global: `~/.claude/skills/tech-debt`
 - Codex global: `~/.codex/skills/tech-debt`
@@ -66,6 +71,7 @@ This keeps IDE config symlinks out of git without touching the rest of your igno
 ```json
 {
   "ides": {
+    "opencode": { "enabled": true, "configPath": "/Users/me/.config/opencode" },
     "cursor": { "enabled": true, "configPath": "/Users/me/.cursor" },
     "claude": { "enabled": false, "configPath": "/Users/me/.claude" },
     "codex": { "enabled": true, "configPath": "/Users/me/.codex" }
@@ -73,17 +79,17 @@ This keeps IDE config symlinks out of git without touching the rest of your igno
 }
 ```
 
-The legacy `adapter` field is still written for compatibility (first enabled tool: cursor → claude → codex).
+The legacy `adapter` field is still written for compatibility (first enabled tool: cursor → claude → codex → opencode).
 
 ## API
 
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/api/settings` | Current `ides`, folder-based `defaults`, `home`, `version` |
-| `PUT` | `/api/settings` | Replace `ides` `{ cursor, claude, codex }` |
+| `PUT` | `/api/settings` | Replace `ides` `{ opencode, cursor, claude, codex }` |
 
 `GET /api/status` also includes `ides` and `version` (from `package.json`).
 
 ## Skill format across tools
 
-Source repos use the shared [Agent Skills](https://agentskills.io/home) layout (`SKILL.md` + frontmatter). The same git catalog can feed Cursor, Claude Code, and Codex when each tool is enabled in Settings — see [Source repositories](/docs/source-repos).
+Source repos use the shared [Agent Skills](https://agentskills.io/home) layout (`SKILL.md` + frontmatter). The same git catalog can feed OpenCode, Cursor, Claude Code, and Codex when each tool is enabled in Settings — see [Source repositories](/docs/source-repos).
