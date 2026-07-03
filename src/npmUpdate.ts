@@ -3,19 +3,15 @@ import path from "node:path";
 import { ensureIdeAgentsHome } from "./config.js";
 import { getIdeAgentsHome } from "./paths.js";
 import { PACKAGE_VERSION } from "./version.js";
+import type { NpmUpdateInfo } from "./shared/api-types.js";
+
+export type { NpmUpdateInfo } from "./shared/api-types.js";
 
 export const NPM_PACKAGE_NAME = "ide-agents";
 
 const REGISTRY_URL = `https://registry.npmjs.org/${NPM_PACKAGE_NAME}/latest`;
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 3000;
-
-export interface NpmUpdateInfo {
-  current: string;
-  latest: string | null;
-  updateAvailable: boolean;
-  installCommand: string;
-}
 
 interface UpdateCache {
   checkedAt: number;

@@ -10,7 +10,10 @@
     "noEmit": true,
     "isolatedModules": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "paths": {
+      "@shared/*": ["../src/shared/*"]
+    }
   },
-  "include": ["src/**/*", "vite.config.ts", "src/**/*.test.ts"]
+  "include": ["src/**/*", "vite.config.ts", "src/**/*.test.ts", "../src/shared/**/*"]
 }

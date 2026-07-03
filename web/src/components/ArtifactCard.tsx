@@ -2,6 +2,7 @@ import {
   ActionIcon,
   Badge,
   Card,
+  Code,
   Group,
   Stack,
   Text,
@@ -80,14 +81,38 @@ export default function ArtifactCard({
   onProjectClick,
 }: ArtifactCardProps) {
   const skillDependencies = row.artifact.skillDependencies ?? [];
+  const codexMeta = row.artifact.codexMeta;
+  const title = codexMeta?.displayName || row.artifact.name;
+  const description =
+    row.artifact.description || codexMeta?.shortDescription || "";
 
   return (
     <Card withBorder padding="lg" radius="md" w="100%" maw={480}>
       <Stack gap="md">
         <Group justify="space-between" align="flex-start" wrap="nowrap">
-          <Title order={4} lineClamp={1} style={{ flex: 1 }}>
-            {row.artifact.name}
-          </Title>
+          <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
+            <Title order={4} lineClamp={1}>
+              {title}
+            </Title>
+            {row.artifact.bucket ? (
+              <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
+                <Badge variant="light" color="gray" size="sm">
+                  {row.artifact.bucket}
+                </Badge>
+                <Code
+                  style={{
+                    fontSize: "0.7rem",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                  title={row.artifact.sourcePath}
+                >
+                  {row.artifact.sourcePath}
+                </Code>
+              </Group>
+            ) : null}
+          </Stack>
           <Group gap="xs" wrap="nowrap">
             <ScopeToggle
               active={row.global}
@@ -110,10 +135,30 @@ export default function ArtifactCard({
           </Group>
         </Group>
 
-        {row.artifact.description ? (
+        {description ? (
           <Text size="sm" c="dimmed" lineClamp={3}>
-            {row.artifact.description}
+            {description}
           </Text>
+        ) : null}
+
+        {codexMeta?.defaultPrompt ? (
+          <Stack gap={4}>
+            <Text size="xs" fw={600} c="dimmed">
+              Suggested prompt
+            </Text>
+            <Text
+              size="sm"
+              c="dimmed"
+              lineClamp={3}
+              style={{
+                borderLeft: "2px solid var(--mantine-color-gray-4)",
+                paddingLeft: "0.5rem",
+                fontStyle: "italic",
+              }}
+            >
+              {codexMeta.defaultPrompt}
+            </Text>
+          </Stack>
         ) : null}
 
         {row.artifact.kind === "agent" && skillDependencies.length > 0 ? (

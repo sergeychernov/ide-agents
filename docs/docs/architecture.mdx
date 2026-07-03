@@ -30,17 +30,20 @@ flowchart LR
 ```
 ide-agents/           # npm package (GitHub repo folder may differ)
 ├── src/              # Backend + CLI (TypeScript → dist/)
+│   ├── shared/
+│   │   └── api-types.ts  # Wire contract shared with web (`import type` only)
 │   ├── cli.ts        # Entry: start server, open browser
 │   ├── server.ts     # Fastify routes + static files
 │   ├── config.ts     # ~/.ide-agents/config.json
 │   ├── ides.ts       # default IDE detection, migration
 │   ├── git.ts        # clone, fetch, pull, status
-│   ├── scan.ts       # artifact discovery + frontmatter
+│   ├── scan.ts       # artifact discovery, layout detection, frontmatter
 │   ├── apply.ts      # symlink management + project .gitignore
 │   ├── gitignore.ts  # managed .gitignore entries
 │   ├── template.ts   # bootstrap empty repos from template/
 │   ├── targets.ts    # path blocking checks
 │   ├── paths.ts      # home, repo paths, tilde expansion
+│   ├── npmUpdate.ts  # npm registry version check (cached)
 │   ├── version.ts    # package version for API
 │   └── adapters/     # per-IDE path mapping
 ├── template/         # Starter catalog (shipped in npm package)
@@ -87,6 +90,18 @@ Enabled tools come from [Settings](/docs/settings) (`config.ides`). `apply.ts` r
 | Codex | `~/.codex` | `.agents` |
 
 Global targets: `{configPath}/skills/<name>` and `{configPath}/agents/<name>.md`.
+
+For **bucketed** catalogs (e.g. [openai/skills](https://github.com/openai/skills)), the symlink name is the innermost skill id (`gh-fix-ci`), while `sourcePath` keeps the bucket path (`skills/.curated/gh-fix-ci`).
+
+## Skill layout detection
+
+`scan.ts` auto-detects how skills are organized in a clone:
+
+1. **Nested** — `skills/<id>/SKILL.md` (default starter template)
+2. **Bucketed** — `skills/<bucket>/<id>/SKILL.md`; on id collisions, `.curated` wins over `.experimental`, then other buckets, then `.system`
+3. **Flat** — `<id>/SKILL.md` at repo root (e.g. cursorskills-style repos)
+
+The detected value is exposed as `skillLayout` on repo cards and in API responses. Agents are always read from `agents/*.md`, independent of skill layout.
 
 ## Apply safety
 

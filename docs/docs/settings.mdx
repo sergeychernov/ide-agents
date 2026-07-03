@@ -33,6 +33,8 @@ You can change paths (e.g. `~/custom/.cursor`). Tilde (`~`) is expanded on save.
 
 Changes save immediately; saving triggers `POST /api/apply` so existing installations are synced to the new set of tools.
 
+When a newer `ide-agents` is published on npm, **Settings** shows an update banner with `npm update -g ide-agents` (also returned as `npmUpdate` from `GET /api/status` and `GET /api/settings`).
+
 ## Where symlinks go
 
 Each tool uses its **config path** for global installs. Project installs use a subfolder under the project root (launch directory from the CLI — see [Architecture](/docs/architecture)).
@@ -85,10 +87,10 @@ The legacy `adapter` field is still written for compatibility (first enabled too
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/settings` | Current `ides`, folder-based `defaults`, `home`, `version` |
+| `GET` | `/api/settings` | Current `ides`, folder-based `defaults`, `home`, `version`, `npmUpdate` |
 | `PUT` | `/api/settings` | Replace `ides` `{ opencode, cursor, claude, codex }` |
 
-`GET /api/status` also includes `ides` and `version` (from `package.json`).
+`GET /api/status` also includes `ides`, `version`, and `npmUpdate` (from `package.json` + npm registry, cached 24h).
 
 ## Skill format across tools
 

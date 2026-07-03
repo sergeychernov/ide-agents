@@ -1,9 +1,19 @@
-import { Button, Code, Group, Paper, Stack, Text } from "@mantine/core";
-import type { Repo } from "../api/client";
+import { Badge, Button, Code, Group, Paper, Stack, Text } from "@mantine/core";
+import type { Repo, SkillLayout } from "../api/client";
 import RepoUrlLine from "./RepoUrlLine";
 import headerClasses from "./repoCardHeader.module.css";
 import hoverClasses from "./repoCardHover.module.css";
 import { useRepoCardOpen } from "./useRepoCardOpen";
+
+const SKILL_LAYOUT_LABEL: Record<Exclude<SkillLayout, "empty">, string> = {
+  nested: "Nested",
+  flat: "Flat",
+  bucketed: "Bucketed",
+};
+
+function skillLayoutLabel(layout: SkillLayout): string | null {
+  return layout === "empty" ? null : SKILL_LAYOUT_LABEL[layout];
+}
 
 function repoStatus(repo: Repo): string {
   const parts = [repo.git.dirty ? "Dirty" : "Clean"];
@@ -43,6 +53,7 @@ export default function InstalledRepoCard({
 }: InstalledRepoCardProps) {
   const sha = repo.git.sha?.slice(0, 8) ?? "—";
   const isEmpty = repo.skillCount === 0 && repo.agentCount === 0;
+  const layoutLabel = skillLayoutLabel(repo.skillLayout);
   const { cardClassName, togglePinned } = useRepoCardOpen();
 
   return (
@@ -60,6 +71,17 @@ export default function InstalledRepoCard({
             <Text fw={600} style={{ flexShrink: 0 }}>
               {repo.id}
             </Text>
+            {layoutLabel && (
+              <Badge
+                variant="light"
+                color="gray"
+                size="sm"
+                style={{ flexShrink: 0 }}
+                title={`Skill layout: ${layoutLabel}`}
+              >
+                {layoutLabel}
+              </Badge>
+            )}
             <div className={headerClasses.repoUrlWrap}>
               <RepoUrlLine url={repo.url} />
             </div>

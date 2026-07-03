@@ -73,6 +73,19 @@ Global and project are **independent** in the UI — both may be active for the 
 |-------|-------------|
 | `recentProjects` | Up to 10 absolute paths, most recent first. Updated when a project install is saved via `PUT /installations`. |
 
+### Repository scan: `skillLayout`
+
+Each repo in `GET /api/repos` includes a detected layout (not stored in `config.json`):
+
+| Value | Meaning |
+|-------|---------|
+| `nested` | `skills/<id>/SKILL.md` |
+| `bucketed` | `skills/<bucket>/<id>/SKILL.md` |
+| `flat` | `<id>/SKILL.md` at repo root |
+| `empty` | No skills found |
+
+Detection order: **nested → bucketed → flat**. See [Source repositories](/docs/source-repos#expected-layout).
+
 ### Legacy migration
 
 - `scope: "global" | "project" | "off"` → `global` / `project` booleans
@@ -91,6 +104,12 @@ Returned by `GET /api/repos/:id/artifacts`:
   "name": "hello",
   "description": "From SKILL.md frontmatter",
   "allowedScope": "any",
+  "bucket": ".curated",
+  "codexMeta": {
+    "displayName": "Hello",
+    "shortDescription": "Demo skill from the starter template.",
+    "defaultPrompt": "Say hello using this skill."
+  },
   "targets": {
     "global": { "exists": false, "isSymlink": false, "blocked": false },
     "project": { "exists": true, "isSymlink": true, "blocked": false }
@@ -98,6 +117,10 @@ Returned by `GET /api/repos/:id/artifacts`:
 }
 ```
 
-`allowedScope` comes from SKILL.md frontmatter. If missing, it defaults to `any` (both toggles enabled).
+For agents, optional `dependsOnSkills` lists skill ids from frontmatter; `GET /artifacts` also resolves `skillDependencies` with names and descriptions for the UI.
+
+`allowedScope` comes from SKILL.md or agent frontmatter. If missing, it defaults to `any` (both toggles enabled).
+
+`bucket` is set only for **bucketed** layouts. `codexMeta` is parsed from `agents/openai.yaml` when present (presentation only).
 
 `targets` aggregates status across **all enabled** IDEs: `blocked` if any tool has a non-symlink at the target path.
