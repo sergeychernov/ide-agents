@@ -106,6 +106,14 @@ export default function ArtifactListPage({
     [rows, kind],
   );
 
+  const filteredRepos = useMemo(
+    () =>
+      repos.filter((r) =>
+        kind === "agent" ? r.agentCount > 0 : r.skillCount > 0,
+      ),
+    [repos, kind],
+  );
+
   const loadBase = useCallback(async () => {
     const [reposData, instData] = await Promise.all([
       api.repos(),
@@ -113,9 +121,6 @@ export default function ArtifactListPage({
     ]);
     setRepos(reposData.repos);
     setInstallations(instData.installations);
-    if (reposData.repos.length > 0) {
-      setRepoId((prev) => prev || reposData.repos[0]!.id);
-    }
   }, []);
 
   const loadArtifacts = useCallback(
@@ -139,6 +144,16 @@ export default function ArtifactListPage({
         setError(err instanceof Error ? err.message : String(err)),
       );
   }, [loadBase]);
+
+  useEffect(() => {
+    if (filteredRepos.length === 0) {
+      setRepoId("");
+      return;
+    }
+    setRepoId((prev) =>
+      filteredRepos.some((r) => r.id === prev) ? prev : filteredRepos[0]!.id,
+    );
+  }, [filteredRepos]);
 
   useEffect(() => {
     if (!repoId || !sessionReady) return;
@@ -266,7 +281,10 @@ export default function ArtifactListPage({
         )
       : [];
 
-  const repoOptions = repos.map((r) => ({ value: r.id, label: r.id }));
+  const repoOptions = filteredRepos.map((r) => ({
+    value: r.id,
+    label: r.id,
+  }));
 
   return (
     <Stack gap="lg">
@@ -278,7 +296,7 @@ export default function ArtifactListPage({
         data={repoOptions}
         value={repoId || null}
         onChange={(value) => setRepoId(value ?? "")}
-        disabled={repos.length === 0}
+        disabled={filteredRepos.length === 0}
         maw={400}
       />
 
