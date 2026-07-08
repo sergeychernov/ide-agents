@@ -39,7 +39,7 @@ export interface ServerOptions {
 }
 
 export async function createServer(options: ServerOptions) {
-  const app = Fastify({ logger: false });
+  const app = Fastify({ logger: false, maxParamLength: 512 });
 
   app.setErrorHandler((error, _request, reply) => {
     reply.status(500).send({

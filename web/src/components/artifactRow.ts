@@ -58,6 +58,22 @@ export function installedAgentsUsingSkillInScope(
   );
 }
 
+/** Agents that delegate to `subagentId` and are installed in this scope. */
+export function installedAgentsUsingSubagentInScope(
+  subagentId: string,
+  rows: ArtifactRow[],
+  scope: InstallScope,
+  excludeAgentId?: string,
+): ArtifactRow[] {
+  return rows.filter(
+    (row) =>
+      row.artifact.kind === "agent" &&
+      row.artifact.id !== excludeAgentId &&
+      row.artifact.dependsOnSubagents?.includes(subagentId) &&
+      (scope === "global" ? row.global : row.project),
+  );
+}
+
 /** Dependent skills installed in this scope that no other agent uses in the same scope. */
 export function deletableDependentSkillsForAgentInScope(
   agentRow: ArtifactRow,
@@ -91,19 +107,106 @@ export function deletableDependentSkillsForAgentInScope(
   return result;
 }
 
+/** Dependent subagents installed in this scope that no other router uses. */
+export function deletableDependentSubagentsForAgentInScope(
+  agentRow: ArtifactRow,
+  rows: ArtifactRow[],
+  scope: InstallScope,
+): ArtifactRow[] {
+  if (agentRow.artifact.kind !== "agent") return [];
+
+  const dependsOn = agentRow.artifact.dependsOnSubagents ?? [];
+  const result: ArtifactRow[] = [];
+
+  for (const subagentId of dependsOn) {
+    const subRow = rows.find(
+      (row) => row.artifact.kind === "agent" && row.artifact.id === subagentId,
+    );
+    if (!subRow) continue;
+    if (scope === "global" ? !subRow.global : !subRow.project) continue;
+    if (
+      installedAgentsUsingSubagentInScope(
+        subagentId,
+        rows,
+        scope,
+        agentRow.artifact.id,
+      ).length > 0
+    ) {
+      continue;
+    }
+    result.push(subRow);
+  }
+
+  return result;
+}
+
+/**
+ * Skills owned by a single `subagentId` (not by the router) that can be turned
+ * off in `scope` when that subagent is removed. `excludedAgentIds` lists other
+ * agents treated as removed for the blocker check (router + sibling subagents
+ * being removed in the same action) — pass the full candidate set for display
+ * and the actually-selected set when applying.
+ */
+export function subagentDeletableSkillsInScope(
+  routerRow: ArtifactRow,
+  subagentId: string,
+  excludedAgentIds: string[],
+  rows: ArtifactRow[],
+  scope: InstallScope,
+): ArtifactRow[] {
+  if (routerRow.artifact.kind !== "agent") return [];
+
+  const excluded = new Set<string>([routerRow.artifact.id, ...excludedAgentIds]);
+  const routerSkills = new Set(routerRow.artifact.dependsOnSkills ?? []);
+
+  const subRow = rows.find(
+    (row) => row.artifact.kind === "agent" && row.artifact.id === subagentId,
+  );
+  if (!subRow) return [];
+
+  const result: ArtifactRow[] = [];
+  for (const skillId of subRow.artifact.dependsOnSkills ?? []) {
+    // Router-owned skills are controlled by their own checkbox in the modal.
+    if (routerSkills.has(skillId)) continue;
+
+    const skillRow = rows.find(
+      (row) => row.artifact.kind === "skill" && row.artifact.id === skillId,
+    );
+    if (!skillRow) continue;
+    if (scope === "global" ? !skillRow.global : !skillRow.project) continue;
+
+    const blockedByOther = rows.some(
+      (row) =>
+        row.artifact.kind === "agent" &&
+        !excluded.has(row.artifact.id) &&
+        (row.artifact.dependsOnSkills ?? []).includes(skillId) &&
+        (scope === "global" ? row.global : row.project),
+    );
+    if (blockedByOther) continue;
+
+    result.push(skillRow);
+  }
+
+  return result;
+}
+
 export function buildAgentScopeOffPatches(
   agentRow: ArtifactRow,
   scope: InstallScope,
   agentPatch: Partial<ArtifactRow>,
   skillIdsToRemove: string[],
+  subagentIdsToRemove: string[] = [],
 ): Record<string, Partial<ArtifactRow>> {
   const patches: Record<string, Partial<ArtifactRow>> = {
     [artifactRowKey(agentRow.artifact)]: agentPatch,
   };
-  const skillPatch: Partial<ArtifactRow> =
+  const scopePatch: Partial<ArtifactRow> =
     scope === "global" ? { global: false } : { project: false };
   for (const skillId of skillIdsToRemove) {
-    patches[artifactRowKey({ kind: "skill", id: skillId })] = skillPatch;
+    patches[artifactRowKey({ kind: "skill", id: skillId })] = scopePatch;
+  }
+  for (const subagentId of subagentIdsToRemove) {
+    patches[artifactRowKey({ kind: "agent", id: subagentId })] = scopePatch;
   }
   return patches;
 }
@@ -161,6 +264,14 @@ function agentsBlockingSkill(
   return installedAgentsUsingSkillInScope(skillId, rows, scope);
 }
 
+function agentsBlockingSubagent(
+  subagentId: string,
+  rows: ArtifactRow[],
+  scope: InstallScope,
+): ArtifactRow[] {
+  return installedAgentsUsingSubagentInScope(subagentId, rows, scope);
+}
+
 export function isGlobalDisabled(
   row: ArtifactRow,
   rows: ArtifactRow[] = [],
@@ -168,6 +279,9 @@ export function isGlobalDisabled(
   if (row.global) {
     if (row.artifact.kind === "skill") {
       return agentsBlockingSkill(row.artifact.id, rows, "global").length > 0;
+    }
+    if (row.artifact.kind === "agent") {
+      return agentsBlockingSubagent(row.artifact.id, rows, "global").length > 0;
     }
     return false;
   }
@@ -183,6 +297,9 @@ export function isProjectDisabled(
   if (row.project) {
     if (row.artifact.kind === "skill") {
       return agentsBlockingSkill(row.artifact.id, rows, "project").length > 0;
+    }
+    if (row.artifact.kind === "agent") {
+      return agentsBlockingSubagent(row.artifact.id, rows, "project").length > 0;
     }
     return false;
   }
@@ -206,6 +323,14 @@ export function globalDisabledReason(
     }
   }
 
+  if (row.global && row.artifact.kind === "agent") {
+    const blocking = agentsBlockingSubagent(row.artifact.id, rows, "global");
+    if (blocking.length > 0) {
+      const names = blocking.map((agent) => agent.artifact.name).join(", ");
+      return `Required by installed router agent${blocking.length > 1 ? "s" : ""}: ${names}`;
+    }
+  }
+
   if (row.artifact.targets?.global.blocked) {
     return "A regular folder/file already exists at the global path";
   }
@@ -226,6 +351,14 @@ export function projectDisabledReason(
     if (blocking.length > 0) {
       const names = blocking.map((agent) => agent.artifact.name).join(", ");
       return `Required by installed agent${blocking.length > 1 ? "s" : ""}: ${names}`;
+    }
+  }
+
+  if (row.project && row.artifact.kind === "agent") {
+    const blocking = agentsBlockingSubagent(row.artifact.id, rows, "project");
+    if (blocking.length > 0) {
+      const names = blocking.map((agent) => agent.artifact.name).join(", ");
+      return `Required by installed router agent${blocking.length > 1 ? "s" : ""}: ${names}`;
     }
   }
 
@@ -261,7 +394,6 @@ export function applyAgentInstallDependencies(
     );
   }
 
-  const dependsOnSkills = agentRow.artifact.dependsOnSkills ?? [];
   const enablingGlobal = patch.global === true;
   const enablingProject = patch.project === true;
 
@@ -271,14 +403,56 @@ export function applyAgentInstallDependencies(
     );
   }
 
+  // Collect the transitive set of agents to enable: the agent itself plus all
+  // delegated subagents (recursively). Cycle-safe via a visited set.
+  const agentsToEnable = new Set<string>();
+  const queue = [agentId];
+  while (queue.length > 0) {
+    const currentId = queue.shift()!;
+    if (agentsToEnable.has(currentId)) continue;
+    agentsToEnable.add(currentId);
+    const current = rows.find((r) => isAgentRow(r, currentId));
+    for (const subId of current?.artifact.dependsOnSubagents ?? []) {
+      if (!agentsToEnable.has(subId)) queue.push(subId);
+    }
+  }
+
+  // Skills pulled in by any agent in the enable set (transitively).
+  const skillsToEnable = new Set<string>();
+  for (const id of agentsToEnable) {
+    const current = rows.find((r) => isAgentRow(r, id));
+    for (const skillId of current?.artifact.dependsOnSkills ?? []) {
+      skillsToEnable.add(skillId);
+    }
+  }
+
+  const projectPath =
+    patch.projectPath?.trim() || defaultProjectPath || agentRow.projectPath;
+
   return rows.map((row) => {
     if (isAgentRow(row, agentId)) {
       return { ...row, ...patch };
     }
 
+    if (row.artifact.kind === "agent" && agentsToEnable.has(row.artifact.id)) {
+      let next = row;
+      if (enablingGlobal && !row.global) {
+        if (!scopeAllowsGlobal(row.artifact.allowedScope)) return row;
+        if (row.artifact.targets?.global.blocked) return row;
+        next = { ...next, global: true };
+      }
+      if (enablingProject && !row.project) {
+        if (!scopeAllowsProject(row.artifact.allowedScope)) return next;
+        if (!projectPath.trim()) return next;
+        if (row.artifact.targets?.project?.blocked) return next;
+        next = { ...next, project: true, projectPath };
+      }
+      return next;
+    }
+
     if (
       row.artifact.kind !== "skill" ||
-      !dependsOnSkills.includes(row.artifact.id)
+      !skillsToEnable.has(row.artifact.id)
     ) {
       return row;
     }
@@ -299,17 +473,17 @@ export function applyAgentInstallDependencies(
       if (!scopeAllowsProject(row.artifact.allowedScope)) {
         return next;
       }
-      const projectPath =
+      const path =
         patch.projectPath?.trim() ||
         defaultProjectPath ||
         row.projectPath;
-      if (!projectPath.trim()) {
+      if (!path.trim()) {
         return next;
       }
       if (row.artifact.targets?.project?.blocked) {
         return next;
       }
-      next = { ...next, project: true, projectPath };
+      next = { ...next, project: true, projectPath: path };
     }
 
     return next;

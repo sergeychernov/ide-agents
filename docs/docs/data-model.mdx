@@ -117,7 +117,7 @@ Returned by `GET /api/repos/:id/artifacts`:
 }
 ```
 
-For agents, optional `dependsOnSkills` lists skill ids from frontmatter; `GET /artifacts` also resolves `skillDependencies` with names and descriptions for the UI.
+For agents, optional `dependsOnSkills` lists skill ids from frontmatter; `GET /artifacts` also resolves `skillDependencies` with names and descriptions for the UI. Router agents may also declare `dependsOnSubagents` (other agent ids they delegate to); ide-agents resolves it into `subagentDependencies` and, on install, transitively enables the delegated agents and their own skills. A subagent cannot be turned off while a router agent that depends on it is installed in the same scope.
 
 `allowedScope` comes from SKILL.md or agent frontmatter. If missing, it defaults to `any` (both toggles enabled).
 

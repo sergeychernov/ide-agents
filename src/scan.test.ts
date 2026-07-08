@@ -136,6 +136,31 @@ describe("scanRepo skill layouts", () => {
     expect(agent?.sourcePath).toBe(path.join("agents", "my-agent.md"));
   });
 
+  it("parses agent subagents and resolves subagentDependencies", async () => {
+    await writeAgent("article-notes", "description: Notes agent");
+    await writeAgent(
+      "article-assistant",
+      [
+        "description: Router agent",
+        "skills:",
+        "  - article-assistant",
+        "subagents:",
+        "  - article-notes",
+      ].join("\n"),
+    );
+
+    const { artifacts } = await scanRepo(repoRoot);
+    const router = artifacts.find((a) => a.id === "article-assistant");
+    expect(router?.dependsOnSubagents).toEqual(["article-notes"]);
+    expect(router?.subagentDependencies).toEqual([
+      {
+        id: "article-notes",
+        name: "article-notes",
+        description: "Notes agent",
+      },
+    ]);
+  });
+
   it("tags bucketed skills with their bucket and leaves nested skills untagged", async () => {
     await writeSkill("skills/.curated/foo");
     const { artifacts } = await scanRepo(repoRoot);

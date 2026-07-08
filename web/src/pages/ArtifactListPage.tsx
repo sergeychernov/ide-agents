@@ -7,7 +7,9 @@ import {
   type Installation,
   type Repo,
 } from "../api/client";
-import AgentUninstallModal from "../components/AgentUninstallModal";
+import AgentUninstallModal, {
+  type SubagentOption,
+} from "../components/AgentUninstallModal";
 import ArtifactCard from "../components/ArtifactCard";
 import ArtifactCardGrid from "../components/ArtifactCardGrid";
 import type { ArtifactRow } from "../components/artifactRow";
@@ -16,6 +18,8 @@ import {
   artifactRowKey,
   buildAgentScopeOffPatches,
   deletableDependentSkillsForAgentInScope,
+  deletableDependentSubagentsForAgentInScope,
+  subagentDeletableSkillsInScope,
   type InstallScope,
   findInstallation,
   isGlobalDisabled,
@@ -239,7 +243,12 @@ export default function ArtifactListPage({
 
     if (row.artifact.kind === "agent" && turningOff) {
       const deletable = deletableDependentSkillsForAgentInScope(row, rows, scope);
-      if (deletable.length > 0) {
+      const deletableSubs = deletableDependentSubagentsForAgentInScope(
+        row,
+        rows,
+        scope,
+      );
+      if (deletable.length > 0 || deletableSubs.length > 0) {
         setPendingAgentOff({
           rowKey: artifactRowKey(row.artifact),
           scope,
@@ -252,7 +261,11 @@ export default function ArtifactListPage({
     void persistAndApply(row, patch);
   }
 
-  function handleAgentOffConfirm(selectedSkillIds: string[]) {
+  function handleAgentOffConfirm(
+    selectedSkillIds: string[],
+    selectedSubagentIds: string[],
+    selectedSubagentSkillIds: string[],
+  ) {
     if (!pendingAgentOff) return;
     const agentRow = rows.find(
       (r) => artifactRowKey(r.artifact) === pendingAgentOff.rowKey,
@@ -263,8 +276,37 @@ export default function ArtifactListPage({
     }
     const { scope, patch } = pendingAgentOff;
     setPendingAgentOff(null);
+
+    // Only nested skills whose owning subagent is actually selected AND that no
+    // other still-installed agent uses in this scope make it into the patches.
+    const requestedNested = new Set(selectedSubagentSkillIds);
+    const safeNested: string[] = [];
+    for (const subId of selectedSubagentIds) {
+      const removable = subagentDeletableSkillsInScope(
+        agentRow,
+        subId,
+        selectedSubagentIds,
+        rows,
+        scope,
+      );
+      for (const skillRow of removable) {
+        if (requestedNested.has(skillRow.artifact.id)) {
+          safeNested.push(skillRow.artifact.id);
+        }
+      }
+    }
+
+    const allSkillIds = Array.from(
+      new Set([...selectedSkillIds, ...safeNested]),
+    );
     void persistAndApplyPatches(
-      buildAgentScopeOffPatches(agentRow, scope, patch, selectedSkillIds),
+      buildAgentScopeOffPatches(
+        agentRow,
+        scope,
+        patch,
+        allSkillIds,
+        selectedSubagentIds,
+      ),
       artifactRowKey(agentRow.artifact),
     );
   }
@@ -279,6 +321,33 @@ export default function ArtifactListPage({
           rows,
           pendingAgentOff.scope,
         )
+      : [];
+  const pendingDeletableSubagents =
+    pendingAgentRow && pendingAgentOff
+      ? deletableDependentSubagentsForAgentInScope(
+          pendingAgentRow,
+          rows,
+          pendingAgentOff.scope,
+        )
+      : [];
+  const pendingDeletableSubagentOptions: SubagentOption[] =
+    pendingAgentRow && pendingAgentOff
+      ? pendingDeletableSubagents.map((subRow) => {
+          const siblingIds = pendingDeletableSubagents.map(
+            (s) => s.artifact.id,
+          );
+          const skills = subagentDeletableSkillsInScope(
+            pendingAgentRow,
+            subRow.artifact.id,
+            siblingIds,
+            rows,
+            pendingAgentOff.scope,
+          ).map((skillRow) => ({
+            id: skillRow.artifact.id,
+            name: skillRow.artifact.name,
+          }));
+          return { id: subRow.artifact.id, name: subRow.artifact.name, skills };
+        })
       : [];
 
   const repoOptions = filteredRepos.map((r) => ({
@@ -329,6 +398,7 @@ export default function ArtifactListPage({
           agentName={pendingAgentRow.artifact.name}
           scope={pendingAgentOff.scope}
           deletableSkills={pendingDeletableSkills}
+          deletableSubagents={pendingDeletableSubagentOptions}
           loading={
             pendingAgentRow !== undefined &&
             applyingId === artifactRowKey(pendingAgentRow.artifact)

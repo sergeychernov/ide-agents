@@ -40,6 +40,18 @@ function parseAgentSkills(data: Record<string, unknown>): string[] {
     .filter(Boolean);
 }
 
+function parseAgentSubagents(data: Record<string, unknown>): string[] {
+  const subagents = data.subagents;
+  if (!Array.isArray(subagents)) {
+    return [];
+  }
+
+  return subagents
+    .filter((entry): entry is string => typeof entry === "string")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
 function parseAgentDescription(content: string, fallbackName: string): string {
   const parsed = matter(content);
   if (typeof parsed.data.description === "string" && parsed.data.description.trim()) {
@@ -327,6 +339,9 @@ async function scanAgents(repoPath: string): Promise<Artifact[]> {
     const dependsOnSkills = parseAgentSkills(
       parsed.data as Record<string, unknown>,
     );
+    const dependsOnSubagents = parseAgentSubagents(
+      parsed.data as Record<string, unknown>,
+    );
 
     artifacts.push({
       id,
@@ -336,6 +351,7 @@ async function scanAgents(repoPath: string): Promise<Artifact[]> {
       description,
       allowedScope,
       ...(dependsOnSkills.length > 0 ? { dependsOnSkills } : {}),
+      ...(dependsOnSubagents.length > 0 ? { dependsOnSubagents } : {}),
     });
   }
 
@@ -349,22 +365,47 @@ function enrichSkillDependencies(artifacts: Artifact[]): Artifact[] {
       skill,
     ]),
   );
+  const agentsById = new Map(
+    artifacts.filter((artifact) => artifact.kind === "agent").map((agent) => [
+      agent.id,
+      agent,
+    ]),
+  );
 
   return artifacts.map((artifact) => {
-    if (artifact.kind !== "agent" || !artifact.dependsOnSkills?.length) {
+    if (artifact.kind !== "agent") {
       return artifact;
     }
 
-    const skillDependencies = artifact.dependsOnSkills.map((skillId) => {
-      const skill = skillsById.get(skillId);
-      return {
-        id: skillId,
-        name: skill?.name ?? skillId,
-        description: skill?.description ?? "",
-      };
-    });
+    let next = artifact;
 
-    return { ...artifact, skillDependencies };
+    if (artifact.dependsOnSkills?.length) {
+      const skillDependencies = artifact.dependsOnSkills.map((skillId) => {
+        const skill = skillsById.get(skillId);
+        return {
+          id: skillId,
+          name: skill?.name ?? skillId,
+          description: skill?.description ?? "",
+        };
+      });
+      next = { ...next, skillDependencies };
+    }
+
+    if (artifact.dependsOnSubagents?.length) {
+      const subagentDependencies = artifact.dependsOnSubagents.map(
+        (agentId) => {
+          const agent = agentsById.get(agentId);
+          return {
+            id: agentId,
+            name: agent?.name ?? agentId,
+            description: agent?.description ?? "",
+          };
+        },
+      );
+      next = { ...next, subagentDependencies };
+    }
+
+    return next;
   });
 }
 

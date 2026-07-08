@@ -81,6 +81,7 @@ export default function ArtifactCard({
   onProjectClick,
 }: ArtifactCardProps) {
   const skillDependencies = row.artifact.skillDependencies ?? [];
+  const subagentDependencies = row.artifact.subagentDependencies ?? [];
   const codexMeta = row.artifact.codexMeta;
   const title = codexMeta?.displayName || row.artifact.name;
   const description =
@@ -178,6 +179,34 @@ export default function ArtifactCard({
                 >
                   <Badge variant="light" color="gray" style={{ cursor: "default" }}>
                     {skill.name}
+                  </Badge>
+                </Tooltip>
+              ))}
+            </Group>
+          </Stack>
+        ) : null}
+
+        {row.artifact.kind === "agent" && subagentDependencies.length > 0 ? (
+          <Stack gap={6}>
+            <Text size="sm" fw={600}>
+              Subagents
+            </Text>
+            <Group gap="xs">
+              {subagentDependencies.map((agent) => (
+                <Tooltip
+                  key={agent.id}
+                  label={agent.description || agent.name}
+                  multiline
+                  maw={280}
+                  withArrow
+                  disabled={!agent.description}
+                >
+                  <Badge
+                    variant="light"
+                    color="indigo"
+                    style={{ cursor: "default" }}
+                  >
+                    {agent.name}
                   </Badge>
                 </Tooltip>
               ))}

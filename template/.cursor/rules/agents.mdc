@@ -45,6 +45,8 @@ description: When to delegate to this subagent. Be specific — the IDE uses thi
 scope: any              # optional — ide-agents only: global | project | any (default any)
 skills:                 # optional — skill ids this agent orchestrates or depends on
   - related-skill
+subagents:              # optional — other agent ids a router agent delegates to
+  - other-agent
 ---
 ```
 
@@ -55,12 +57,19 @@ present, always use YAML block-list style. For standalone agents that do not req
 bundled skills, omit the field entirely. Do not use inline arrays such as
 `skills: []` or `skills: [related-skill]`.
 
+Use `subagents` only on **router** agents that delegate to other agents. ide-agents
+recursively installs the delegated agents (and their own `skills`) when the router
+is installed, and blocks removing a subagent while a router that depends on it stays
+installed in the same scope. Leaf agents list only their own `skills` and never use
+`subagents`.
+
 | Field | Required | Used by |
 |-------|----------|---------|
 | `name` | yes | Cursor / Claude / Codex subagent id (defaults to filename if omitted — prefer explicit) |
 | `description` | yes | IDE delegation — when the main agent should hand off to this subagent |
 | `scope` | no | ide-agents UI — which install toggles are enabled |
 | `skills` | no | ide-agents UI — dependent skill ids (auto-install + removal guard) |
+| `subagents` | no | ide-agents UI — delegated agent ids (transitive auto-install + removal guard, router agents only) |
 
 Subagents are **not** skills: they live in `agents/*.md`, install to `~/.cursor/agents/`, and are invoked by name in Agent mode (e.g. `/oracle …` or “use the oracle subagent”), not via the `/` skill picker.
 

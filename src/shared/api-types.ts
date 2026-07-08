@@ -88,6 +88,10 @@ export interface Artifact {
   allowedScope: ArtifactAllowedScope | null;
   dependsOnSkills?: string[];
   skillDependencies?: SkillDependency[];
+  /** Other agent ids this agent delegates to (router agents), from frontmatter. */
+  dependsOnSubagents?: string[];
+  /** Resolved `dependsOnSubagents` with names/descriptions, for UI display. */
+  subagentDependencies?: SkillDependency[];
   targets?: ArtifactTargets;
   /** Top-level bucket for bucketed layouts (e.g. `.curated`, `.system`). */
   bucket?: string;

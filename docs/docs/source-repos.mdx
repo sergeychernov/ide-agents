@@ -83,9 +83,25 @@ scope: any
 
 ## Agents
 
-Agent files are `agents/<name>.md`. Optional YAML frontmatter with `description`, `scope` (same values as skills), and `skills` (block list of skill ids the agent depends on).
+Agent files are `agents/<name>.md`. Optional YAML frontmatter with `description`, `scope` (same values as skills), `skills` (block list of skill ids the agent depends on), and `subagents` (block list of other agent ids a router agent delegates to).
+
+```yaml
+---
+name: my-agent
+description: When to delegate to this subagent.
+scope: any
+skills:
+  - related-skill
+subagents:        # router agents only
+  - other-agent
+---
+```
 
 When an agent lists `skills`, ide-agents auto-installs those skills with the same scope (Global or Project) and blocks removing an installed skill while a dependent agent remains installed.
+
+### Router agents
+
+`subagents` is only for **router** agents that delegate to other agents. When a router is installed, ide-agents transitively enables the delegated agents (recursively, with cycle protection) along with their own `skills`. A subagent cannot be turned off while a router that depends on it stays installed in the same scope; on uninstall, ide-agents offers to remove the delegated subagents and their now-unused skills. Leaf agents list only their own `skills` and never use `subagents`.
 
 ## Adding a repository
 

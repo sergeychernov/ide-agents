@@ -8,9 +8,3 @@ docs/.docusaurus/
 .docs-capture/run.capture.spec.mjs
 *.log
 .DS_Store
-# ide-agents (managed — do not edit manually)
-.agents/skills/article-architect
-.claude/skills/article-architect
-.cursor/skills/article-architect
-.opencode/skills/article-architect
-
