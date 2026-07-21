@@ -21,6 +21,7 @@ export type {
   IdeToolConfig,
   IdesConfig,
   Installation,
+  InstallationScopes,
   NpmUpdateInfo,
   RepoBootstrap,
   SkillDependency,

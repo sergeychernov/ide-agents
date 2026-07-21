@@ -5,6 +5,7 @@ import type {
   Artifact,
   ArtifactTargets,
   Installation,
+  ProjectTargetRef,
   TargetStatus,
 } from "./types.js";
 
@@ -43,10 +44,9 @@ export async function getArtifactTargets(
   config: IdeAgentsConfig,
 ): Promise<ArtifactTargets> {
   const adapters = getEnabledAdapters(config);
-  const installation = {
+  const globalRef = {
     kind: artifact.kind,
     targetName: artifact.id,
-    projectPath,
   };
 
   let global: TargetStatus = {
@@ -59,13 +59,18 @@ export async function getArtifactTargets(
 
   for (const adapter of adapters) {
     const globalStatus = await getTargetStatus(
-      adapter.getGlobalTargetPath(installation),
+      adapter.getGlobalTargetPath(globalRef),
     );
     global = mergeTargetStatus(global, globalStatus);
 
     if (projectPath) {
+      const projectRef: ProjectTargetRef = {
+        kind: artifact.kind,
+        targetName: artifact.id,
+        projectPath,
+      };
       const projectStatus = await getTargetStatus(
-        adapter.getProjectTargetPath(installation),
+        adapter.getProjectTargetPath(projectRef),
       );
       project = project
         ? mergeTargetStatus(project, projectStatus)
@@ -79,11 +84,11 @@ export async function getArtifactTargets(
 export function installationStub(
   artifact: Pick<Artifact, "kind" | "id" | "sourcePath">,
   projectPath: string | null,
-): Pick<Installation, "kind" | "targetName" | "sourcePath" | "projectPath"> {
+): ProjectTargetRef & Pick<Installation, "sourcePath"> {
   return {
     kind: artifact.kind,
     targetName: artifact.id,
     sourcePath: artifact.sourcePath,
-    projectPath,
+    projectPath: projectPath ?? "",
   };
 }

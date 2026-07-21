@@ -222,6 +222,15 @@ export default function ArtifactCard({
           readOnly
           disabled={applying}
         />
+
+        {row.otherProjectPaths.length > 0 ? (
+          <Text size="xs" c="dimmed">
+            Also installed in:{" "}
+            {row.otherProjectPaths
+              .map((p) => p.split("/").filter(Boolean).pop() ?? p)
+              .join(", ")}
+          </Text>
+        ) : null}
       </Stack>
     </Card>
   );

@@ -51,6 +51,7 @@ function row(
     global: flags.global ?? false,
     project: flags.project ?? false,
     projectPath: PROJECT,
+    otherProjectPaths: [],
     installationId: `${kind}-${id}`,
   };
 }
@@ -67,9 +68,10 @@ function installation(
     artifactId,
     sourcePath: kind === "skill" ? `skills/${artifactId}` : `agents/${artifactId}.md`,
     targetName: artifactId,
-    global: flags.global ?? false,
-    project: flags.project ?? false,
-    projectPath: PROJECT,
+    scopes: {
+      global: flags.global ?? false,
+      projectPaths: flags.project ? [PROJECT] : [],
+    },
   };
 }
 
@@ -84,13 +86,13 @@ describe("findInstallation", () => {
       findInstallation(installations, REPO, {
         kind: "agent",
         id: "article-architect",
-      })?.global,
+      })?.scopes.global,
     ).toBe(false);
     expect(
       findInstallation(installations, REPO, {
         kind: "skill",
         id: "article-architect",
-      })?.global,
+      })?.scopes.global,
     ).toBe(true);
   });
 });

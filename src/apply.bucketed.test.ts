@@ -32,9 +32,7 @@ function bucketedInstallation(
     artifactId: "gh-fix-ci",
     sourcePath: path.join("skills", ".curated", "gh-fix-ci"),
     targetName: "gh-fix-ci",
-    global: true,
-    project: false,
-    projectPath: null,
+    scopes: { global: true, projectPaths: [] },
     ...overrides,
   };
 }

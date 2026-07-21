@@ -99,6 +99,12 @@ export interface Artifact {
   codexMeta?: CodexSkillMeta;
 }
 
+export interface InstallationScopes {
+  global: boolean;
+  /** Normalized absolute project root paths with active project-scope symlinks. */
+  projectPaths: string[];
+}
+
 export interface Installation {
   id: string;
   repoId: string;
@@ -106,9 +112,14 @@ export interface Installation {
   artifactId: string;
   sourcePath: string;
   targetName: string;
-  global: boolean;
-  project: boolean;
-  projectPath: string | null;
+  scopes: InstallationScopes;
+}
+
+/** Minimal shape for resolving a project-scoped symlink target path. */
+export interface ProjectTargetRef {
+  kind: ArtifactKind;
+  targetName: string;
+  projectPath: string;
 }
 
 /** Result of bootstrapping an empty repo with the starter template. */

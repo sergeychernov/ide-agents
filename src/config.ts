@@ -7,7 +7,11 @@ import {
   getDefaultIdes,
   migrateIdesConfig,
 } from "./ides.js";
-import type { IdeAgentsConfig, Installation, RepoConfig } from "./types.js";
+import {
+  installationNeedsScopesMigration,
+  migrateInstallation,
+} from "./install-scopes.js";
+import type { IdeAgentsConfig, RepoConfig } from "./types.js";
 
 function buildDefaultConfig(): IdeAgentsConfig {
   const ides = getDefaultIdes();
@@ -31,26 +35,6 @@ async function fileExists(filePath: string): Promise<boolean> {
   } catch {
     return false;
   }
-}
-
-function migrateInstallation(raw: unknown): Installation {
-  const item = raw as Installation & { scope?: string };
-  if (typeof item.global === "boolean") {
-    return item;
-  }
-
-  const scope = item.scope;
-  return {
-    id: item.id,
-    repoId: item.repoId,
-    kind: item.kind,
-    artifactId: item.artifactId,
-    sourcePath: item.sourcePath,
-    targetName: item.targetName,
-    global: scope === "global",
-    project: scope === "project",
-    projectPath: item.projectPath ?? null,
-  };
 }
 
 function isLegacySampleRepo(repo: RepoConfig): boolean {
@@ -111,6 +95,8 @@ export async function readConfig(): Promise<IdeAgentsConfig> {
   const raw = await readFile(configPath, "utf8");
   const parsed = JSON.parse(raw) as IdeAgentsConfig;
   const ides = migrateIdesConfig(parsed);
+  const rawInstallations = parsed.installations ?? [];
+  const installations = rawInstallations.map(migrateInstallation);
   let config: IdeAgentsConfig = {
     ...defaults,
     ...parsed,
@@ -118,11 +104,12 @@ export async function readConfig(): Promise<IdeAgentsConfig> {
     ides,
     server: { ...defaults.server, ...parsed.server },
     repos: parsed.repos ?? [],
-    installations: (parsed.installations ?? []).map(migrateInstallation),
+    installations,
     recentProjects: parsed.recentProjects ?? [],
   };
   const withoutSample = stripLegacySampleRepo(config);
-  if (withoutSample.repos.length !== config.repos.length) {
+  const needsScopesMigration = rawInstallations.some(installationNeedsScopesMigration);
+  if (withoutSample.repos.length !== config.repos.length || needsScopesMigration) {
     await writeConfig(withoutSample);
     config = withoutSample;
   }

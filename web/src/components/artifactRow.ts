@@ -34,6 +34,8 @@ export interface ArtifactRow {
   global: boolean;
   project: boolean;
   projectPath: string;
+  /** Project paths where this artifact is installed, excluding launch cwd. */
+  otherProjectPaths: string[];
   installationId: string | null;
 }
 

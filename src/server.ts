@@ -17,7 +17,13 @@ import {
   applyInstallations,
   findRemovedInstallations,
   removeInstallationSymlinks,
+  removeProjectPathSymlinks,
 } from "./apply.js";
+import {
+  findAddedProjectPaths,
+  findRemovedProjectPaths,
+  normalizeInstallation,
+} from "./install-scopes.js";
 import { scanRepo, scanRepoArtifacts } from "./scan.js";
 import { getArtifactTargets } from "./targets.js";
 import {
@@ -356,7 +362,7 @@ export async function createServer(options: ServerOptions) {
           id = uuidv4();
         }
         usedIds.add(id);
-        return { ...installation, id };
+        return normalizeInstallation({ ...installation, id });
       });
 
       for (const removed of findRemovedInstallations(
@@ -366,10 +372,22 @@ export async function createServer(options: ServerOptions) {
         await removeInstallationSymlinks(removed, config);
       }
 
-      for (const installation of normalized) {
-        if (installation.project && installation.projectPath) {
-          const updated = await addRecentProject(config, installation.projectPath);
-          config.recentProjects = updated.recentProjects;
+      for (const nextInst of normalized) {
+        const prevInst = previousInstallations.find((p) => p.id === nextInst.id);
+        if (prevInst) {
+          const removedPaths = findRemovedProjectPaths(prevInst, nextInst);
+          if (removedPaths.length > 0) {
+            await removeProjectPathSymlinks(nextInst, removedPaths, config);
+          }
+          for (const addedPath of findAddedProjectPaths(prevInst, nextInst)) {
+            const updated = await addRecentProject(config, addedPath);
+            config.recentProjects = updated.recentProjects;
+          }
+        } else {
+          for (const addedPath of nextInst.scopes.projectPaths) {
+            const updated = await addRecentProject(config, addedPath);
+            config.recentProjects = updated.recentProjects;
+          }
         }
       }
 

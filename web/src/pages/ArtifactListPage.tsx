@@ -3,7 +3,6 @@ import { Alert, Select, Stack, Text, Title } from "@mantine/core";
 import {
   api,
   type ArtifactKind,
-  type Artifact,
   type Installation,
   type Repo,
 } from "../api/client";
@@ -21,69 +20,15 @@ import {
   deletableDependentSubagentsForAgentInScope,
   subagentDeletableSkillsInScope,
   type InstallScope,
-  findInstallation,
   isGlobalDisabled,
   isProjectDisabled,
 } from "../components/artifactRow";
+import { buildRows, rowsToInstallations } from "./artifactListRows";
 
 interface ArtifactListPageProps {
   kind: ArtifactKind;
   title: string;
   emptyHint: string;
-}
-
-function buildRows(
-  artifacts: Artifact[],
-  installations: Installation[],
-  repoId: string,
-  defaultProjectPath: string,
-): ArtifactRow[] {
-  return artifacts.map((artifact) => {
-    const existing = findInstallation(installations, repoId, artifact);
-    return {
-      artifact,
-      global: existing?.global ?? false,
-      project: existing?.project ?? false,
-      projectPath: defaultProjectPath,
-      installationId: existing?.id ?? null,
-    };
-  });
-}
-
-function rowsToInstallations(
-  rows: ArtifactRow[],
-  repoId: string,
-  existing: Installation[],
-  defaultProjectPath: string,
-): Installation[] {
-  const other = existing.filter((i) => i.repoId !== repoId);
-  const previous = existing.filter((i) => i.repoId === repoId);
-  const current: Installation[] = [];
-
-  for (const row of rows) {
-    const prev = previous.find(
-      (i) =>
-        i.artifactId === row.artifact.id && i.kind === row.artifact.kind,
-    );
-    // Active install uses launch cwd only; keep previous path when off for symlink removal.
-    const projectPath = row.project
-      ? defaultProjectPath || null
-      : (prev?.projectPath ?? null);
-
-    current.push({
-      id: row.installationId ?? crypto.randomUUID(),
-      repoId,
-      kind: row.artifact.kind,
-      artifactId: row.artifact.id,
-      sourcePath: row.artifact.sourcePath,
-      targetName: row.artifact.id,
-      global: row.global,
-      project: row.project,
-      projectPath,
-    });
-  }
-
-  return [...other, ...current];
 }
 
 export default function ArtifactListPage({

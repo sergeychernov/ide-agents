@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { ArtifactKind, IdeId } from "../types.js";
+import type { ArtifactKind, IdeId, ProjectTargetRef } from "../types.js";
 import { expandUserPath, resolveProjectPath } from "../paths.js";
 import type { Adapter } from "./types.js";
 
@@ -41,10 +41,7 @@ export function createAdapter(
       return targetPath(globalBase, installation.kind, installation.targetName);
     },
 
-    getProjectTargetPath(installation) {
-      if (!installation.projectPath) {
-        throw new Error("projectPath is required for project target");
-      }
+    getProjectTargetPath(installation: ProjectTargetRef) {
       const projectBase = path.join(
         resolveProjectPath(installation.projectPath),
         layout.projectDir,

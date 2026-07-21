@@ -6,8 +6,11 @@ import {
   removeManagedGitignoreEntry,
   toGitignorePath,
 } from "./gitignore.js";
+import {
+  projectTargetRef,
+} from "./install-scopes.js";
 import { getRepoPath, resolveProjectPath } from "./paths.js";
-import type { IdeAgentsConfig, ApplyResult, ApplyResultItem } from "./types.js";
+import type { IdeAgentsConfig, ApplyResult, ApplyResultItem, Installation } from "./types.js";
 
 async function pathExists(filePath: string): Promise<boolean> {
   try {
@@ -132,6 +135,48 @@ function installationKey(installation: {
   return `${installation.repoId}:${installation.kind}:${installation.artifactId}`;
 }
 
+/** Remove project-scope symlinks at specific paths for an installation. */
+export async function removeProjectPathSymlinks(
+  installation: Installation,
+  projectPaths: string[],
+  config: IdeAgentsConfig,
+): Promise<ApplyResultItem[]> {
+  if (projectPaths.length === 0) {
+    return [];
+  }
+
+  const adapters = getEnabledAdapters(config);
+  const results: ApplyResultItem[] = [];
+  const repo = config.repos.find((r) => r.id === installation.repoId);
+  if (!repo) {
+    return results;
+  }
+
+  const repoRoot = getRepoPath(repo.slug);
+  const type = installation.kind === "skill" ? "dir" : "file";
+
+  for (const projectPath of projectPaths) {
+    const projectRoot = resolveProjectPath(projectPath);
+    const targetRef = projectTargetRef(installation, projectPath);
+
+    for (const adapter of adapters) {
+      const sourcePath = adapter.getSourcePath(repoRoot, installation);
+      const projectTarget = adapter.getProjectTargetPath(targetRef);
+      results.push(
+        ...(await applyScope(
+          sourcePath,
+          type,
+          false,
+          projectTarget,
+          projectRoot,
+        )),
+      );
+    }
+  }
+
+  return results;
+}
+
 /** Remove symlinks for an installation (e.g. dropped from config). */
 export async function removeInstallationSymlinks(
   installation: IdeAgentsConfig["installations"][number],
@@ -152,23 +197,23 @@ export async function removeInstallationSymlinks(
     const globalTarget = adapter.getGlobalTargetPath(installation);
 
     results.push(
-      ...(await applyScope(sourcePath, type, false, globalTarget, null)),
+      ...(await applyScope(
+        sourcePath,
+        type,
+        false,
+        globalTarget,
+        null,
+      )),
     );
-
-    if (installation.projectPath) {
-      const projectRoot = resolveProjectPath(installation.projectPath);
-      const projectTarget = adapter.getProjectTargetPath(installation);
-      results.push(
-        ...(await applyScope(
-          sourcePath,
-          type,
-          false,
-          projectTarget,
-          projectRoot,
-        )),
-      );
-    }
   }
+
+  results.push(
+    ...(await removeProjectPathSymlinks(
+      installation,
+      installation.scopes.projectPaths,
+      config,
+    )),
+  );
 
   return results;
 }
@@ -213,21 +258,21 @@ export async function applyInstallations(
         ...(await applyScope(
           sourcePath,
           type,
-          installation.global,
+          installation.scopes.global,
           globalTarget,
           null,
         )),
       );
 
-      // projectPath is kept in config while project is off so removal can run.
-      if (installation.projectPath) {
-        const projectRoot = resolveProjectPath(installation.projectPath);
-        const projectTarget = adapter.getProjectTargetPath(installation);
+      for (const projectPath of installation.scopes.projectPaths) {
+        const projectRoot = resolveProjectPath(projectPath);
+        const targetRef = projectTargetRef(installation, projectPath);
+        const projectTarget = adapter.getProjectTargetPath(targetRef);
         results.push(
           ...(await applyScope(
             sourcePath,
             type,
-            installation.project,
+            true,
             projectTarget,
             projectRoot,
           )),
